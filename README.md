@@ -10,6 +10,7 @@ Sistema de gestión de cuadrillas para obras de mantenimiento.
 
 ## Instalación
 1. Clona el repositorio: git clone <url>
-2. Configura las variables de entorno en ackend/.env y rontend/.env.
+2. Configura las variables de entorno en Backend/.env y Frontend/.env.
 3. Backend: cd backend && pip install -r requirements.txt && python src/main.py
-4. Frontend: cd frontend && npm install && npm start
+4. Frontend: cd frontend && npm install && npm start
+

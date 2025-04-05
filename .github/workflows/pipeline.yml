@@ -1,9 +1,9 @@
 name: PIPELINE
 on:
   push:
-    branches: [main]
+    branches: [none]
   pull_request:
-    branches: [main]
+    branches: [none]
 jobs:
   backend:
     runs-on: ubuntu-latest
