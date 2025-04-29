@@ -1,0 +1,38 @@
+/* src/styles/custom.css */
+.custom-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 10px;
+}
+
+.custom-option span {
+  flex-grow: 1;
+}
+
+.custom-option button {
+  margin-left: 10px;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.custom-select option {
+  padding: 8px;
+}
+
+/* Asterisco rojo para campos obligatorios */
+.required-asterisk::after {
+content: '*';
+color: red;
+font-size: 1rem;
+position: absolute;
+top: 0;
+right: -1px;
+}
+
+/* Contenedor del label para posicionar el asterisco */
+.form-label.required {
+position: relative;
+padding-right: 15px; /* Espacio para el asterisco */
+}
