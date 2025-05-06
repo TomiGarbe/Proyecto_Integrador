@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from controllers import sucursales
+from controllers import sucursales, zonas
 from dotenv import load_dotenv
 import os
 
@@ -24,3 +24,4 @@ app.add_middleware(
 
 
 app.include_router(sucursales.router)
+app.include_router(zonas.router)
