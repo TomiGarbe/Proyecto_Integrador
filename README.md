@@ -1,4 +1,4 @@
-# Mi Proyecto
+# Inversur App
 Sistema de gestión de cuadrillas para obras de mantenimiento.
 
 ## Tecnologías
@@ -6,11 +6,11 @@ Sistema de gestión de cuadrillas para obras de mantenimiento.
 - Frontend: React
 - Bases de datos: PostgreSQL, Firebase
 - CI/CD: GitHub Actions
-- Despliegue: Heroku
+- Despliegue: Azure
 
 ## Instalación
 1. Clona el repositorio: git clone <url>
-2. Configura las variables de entorno en Backend/.env y Frontend/.env.
-3. Backend: cd backend && pip install -r requirements.txt && python src/main.py
-4. Frontend: cd frontend && npm install && npm start
-
+2. Configura las variables de entorno en Backend/src/env.config y Frontend/.env
+3. Docker: docker-compose up -d
+4. Backend: cd backend && pip install -r requirements.txt && cd src && uvicorn main:app --host 0.0.0.0 --port 8000
+5. Frontend: cd frontend && npm install && npm run dev
