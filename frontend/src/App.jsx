@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Sucursales from './pages/Sucursales';
+import Mantenimiento from './pages/Mantenimiento';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <main className="flex-grow-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/mantenimiento" element={<Mantenimiento />} /> 
             <Route path="/sucursales" element={<Sucursales />} />
           </Routes>
         </main>

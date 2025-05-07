@@ -4,6 +4,7 @@ import { Table, Button, Container, Row, Col } from 'react-bootstrap';
 import SucursalForm from '../components/SucursalForm';
 import { getSucursales, deleteSucursal } from '../services/sucursalService';
 import { getZonas } from '../services/zonaService';
+import { FaPlus } from 'react-icons/fa';
 
 const Sucursales = () => {
   const [sucursales, setSucursales] = useState([]);
@@ -56,13 +57,14 @@ const Sucursales = () => {
 
   return (
     <Container className="mt-4">
-      <Row className="mb-3">
+      <Row className="align-items-center mb-2">
         <Col>
           <h2>Gestión de Sucursales</h2>
         </Col>
         <Col className="text-end">
-          <Button variant="primary" onClick={() => setShowForm(true)}>
-            Crear Sucursal
+          <Button className="custom-button" onClick={() => setShowForm(true)}>
+            <FaPlus />
+            Agregar
           </Button>
         </Col>
       </Row>

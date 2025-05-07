@@ -1,0 +1,15 @@
+.nav-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+  
+  @media (max-width: 991px) {
+    .nav-right {
+      flex-direction: row;
+      justify-content: flex-end;
+      width: 100%;
+    }
+  }
+  

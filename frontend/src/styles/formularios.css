@@ -1,0 +1,106 @@
+/* Estilo para el Dropdown Toggle */
+.custom-dropdown-toggle {
+  background-color: #ffffff !important;
+  border-color: #ced4da !important;
+  width: 100%;
+  text-align: left !important;
+  color: #6c757d !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+}
+
+/* Cambiar el color del texto a negro al pasar el mouse */
+.custom-dropdown-toggle:hover {
+  color: #2c2c2c !important;
+}
+
+/* Aseguramos que el texto dentro del botón no se centre */
+.custom-dropdown-toggle > span {
+  text-align: left !important;
+  width: 100%;
+}
+
+/* Estilo para los Dropdown Items */
+.custom-dropdown-item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  color: #2c2c2c !important;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Estilo para el span dentro de los Dropdown Items */
+.custom-dropdown-item-span {
+  flex: 1;
+}
+
+/* Estilo para el botón de eliminar (×) dentro de los Dropdown Items */
+.custom-delete-button {
+  background-color: red !important;
+  border-color: red !important;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.8rem;
+  margin-left: 83% !important;
+}
+
+/* Estilo para el Dropdown Item de "Agregar nueva zona" */
+.custom-dropdown-item-add {
+  display: flex;
+  align-items: center;
+}
+
+/* Estilo para el span dentro del Dropdown Item de "Agregar nueva zona" */
+.custom-dropdown-item-add-span {
+  margin-right: 0.5rem;
+  color: #2c2c2c;
+}
+
+/* Estilo para el botón "Agregar" dentro del InputGroup */
+.custom-add-button {
+  background-color: #6c757d !important; /* Gris oscuro */
+  border-color: #6c757d !important;
+  color: #ffffff !important; /* Texto blanco */
+}
+
+.custom-add-button:hover {
+  background-color: #2c2c2c !important; /* Gris más oscuro al hover */
+  border-color: #2c2c2c !important;
+  color: #ffffff !important;
+}
+
+.custom-add-button:disabled {
+  background-color: #ffffff !important; /* Gris claro para disabled */
+  border-color: #6c757d !important;
+  color: #6c757d !important;
+  opacity: 0.65;
+}
+
+/* Estilo para el botón "Guardar" */
+.custom-save-button {
+  background-color: #6c757d !important; /* Gris oscuro */
+  border-color: #6c757d !important;
+  color: #ffffff !important; /* Texto blanco */
+}
+
+.custom-save-button:hover {
+  background-color: #2c2c2c !important; /* Gris más oscuro al hover */
+  border-color: #2c2c2c !important;
+  color: #ffffff !important;
+}
+
+/* Asterisco rojo para campos obligatorios */
+.required-asterisk::after {
+  content: '*';
+  color: red;
+  font-size: 1rem;
+  position: absolute;
+  top: 0;
+  right: -1px;
+}
+
+/* Contenedor del label para posicionar el asterisco */
+.form-label.required {
+  position: relative;
+  padding-right: 15px;
+}
