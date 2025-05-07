@@ -4,3 +4,9 @@ __pycache__/
 .DS_Store
 env.config
 *.env
+test.db
+.pytest_cache
+htmlcov
+.coverage
+dist
+*.xml
