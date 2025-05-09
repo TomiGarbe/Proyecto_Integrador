@@ -145,9 +145,9 @@ const SucursalForm = ({ sucursal, onClose }) => {
                     key={zona.id}
                     as="div"
                     className="custom-dropdown-item"
+                    onClick={() => handleZonaSelect(zona.nombre)}
                   >
                     <span
-                      onClick={() => handleZonaSelect(zona.nombre)}
                       className="custom-dropdown-item-span"
                     >
                       {zona.nombre}
@@ -155,7 +155,10 @@ const SucursalForm = ({ sucursal, onClose }) => {
                     <Button
                       size="sm"
                       className="custom-delete-button"
-                      onClick={(e) => handleDeleteZona(zona.id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteZona(zona.id);
+                      }}
                     >
                       ×
                     </Button>

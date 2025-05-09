@@ -6,7 +6,7 @@ env.config
 *.env
 test.db
 .pytest_cache
-htmlcov
 .coverage
 dist
 *.xml
+coverage
