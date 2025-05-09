@@ -1,39 +1,294 @@
-name: PIPELINE
+name: Pipeline
+
 on:
   push:
-    branches: [none]
-  pull_request:
-    branches: [none]
+    branches:
+      - main
+
+permissions:
+  checks: write # Permite escribir check runs para mostrar resultados de tests
+  actions: read # Permite leer acciones
+  contents: read # Permite leer el contenido del repositorio
+
 jobs:
-  backend:
+  #=======================
+  # STAGE: BUILD AND TEST
+  #=======================
+  build-and-test-backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-      - name: Install dependencies
+          python-version: '3.12'
+      - name: Install Backend Dependencies
         run: |
           cd backend
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+      - name: Run Backend Tests with Coverage
         run: |
           cd backend
-          pytest
-  frontend:
+          pytest -v --cov=src --cov-report=xml --junitxml=pytest-report.xml
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Pytest Results
+          path: backend/pytest-report.xml
+          reporter: java-junit
+      - name: Code Coverage Summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: backend/coverage.xml
+          format: markdown
+          output: file
+          fail_below_min: false
+      - name: Write Coverage to Summary
+        run: |
+          cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+      - name: Prepare Backend Artifact
+        run: |
+          mkdir -p backend-artifact
+          cp -r backend/src/* backend-artifact/
+          cp backend/requirements.txt backend-artifact/
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-artifact
+          path: backend-artifact/
+          if-no-files-found: error
+
+  build-and-test-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
-      - name: Install dependencies
+          node-version: '20'
+      - name: Install Frontend Dependencies
         run: |
           cd frontend
           npm install
-      - name: Run tests
+      - name: Create Frontend .env File
         run: |
           cd frontend
-          npm test
+          echo "VITE_API_URL_QA=${{ secrets.BACKEND_QA_URL }}" > .env
+          echo "VITE_API_URL_PROD=${{ secrets.BACKEND_PROD_URL }}" >> .env
+          echo "VITE_FRONTEND_URL=${{ secrets.FRONTEND_QA_URL }}" >> .env
+      - name: Run Frontend Tests with Coverage
+        run: |
+          cd frontend
+          npm test -- --coverage --ci
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Jest Results
+          path: frontend/junit.xml
+          reporter: jest-junit
+      - name: Install xmlstarlet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xmlstarlet
+      - name: Write Frontend Coverage to Summary
+        run: |
+          echo "## Frontend Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Line Rate | Complexity | Health |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----------|------------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f frontend/coverage/clover.xml ]; then
+            # Extraer métricas por archivo
+            xmlstarlet sel -t -m "//file" -v "concat(@name, '|', metrics/@statements, '|', metrics/@coveredstatements, '|0|')" -n frontend/coverage/clover.xml | while IFS='|' read -r FILE STATEMENTS COVERED_STATEMENTS _ HEALTH; do
+              echo "Processing file: $FILE, Statements: $STATEMENTS, Covered: $COVERED_STATEMENTS" >&2
+              if [ -z "$STATEMENTS" ] || [ "$STATEMENTS" = "0" ]; then
+                LINE_RATE_INT=0
+                LINE_RATE="0%"
+                HEALTH="❌"
+              else
+                LINE_RATE=$(echo "scale=2; ($COVERED_STATEMENTS * 100) / $STATEMENTS" | bc)
+                LINE_RATE_INT=$(echo "$LINE_RATE" | cut -d. -f1)
+                LINE_RATE=$(printf "%.0f%%" "$LINE_RATE_INT")
+                if [ "$LINE_RATE_INT" -ge 80 ]; then
+                  HEALTH="✔"
+                elif [ "$LINE_RATE_INT" -ge 50 ]; then
+                  HEALTH="➖"
+                else
+                  HEALTH="❌"
+                fi
+              fi
+              echo "| $FILE | $LINE_RATE | 0 | $HEALTH |" >> $GITHUB_STEP_SUMMARY
+            done
+
+            # Extraer métricas totales
+            TOTAL_STATEMENTS=$(xmlstarlet sel -t -v "//project/metrics/@statements" frontend/coverage/clover.xml)
+            COVERED_STATEMENTS=$(xmlstarlet sel -t -v "//project/metrics/@coveredstatements" frontend/coverage/clover.xml)
+            echo "Total statements: $TOTAL_STATEMENTS, Covered statements: $COVERED_STATEMENTS" >&2
+            if [ -z "$TOTAL_STATEMENTS" ] || [ "$TOTAL_STATEMENTS" -eq 0 ]; then
+              LINE_RATE="0%"
+              HEALTH="❌"
+              SUMMARY="0% (0 / 0)"
+            else
+              LINE_RATE=$(echo "scale=2; ($COVERED_STATEMENTS * 100) / $TOTAL_STATEMENTS" | bc)
+              LINE_RATE_INT=$(echo "$LINE_RATE" | cut -d. -f1)
+              LINE_RATE=$(printf "%.0f%%" "$LINE_RATE_INT")
+              SUMMARY="$LINE_RATE ($COVERED_STATEMENTS / $TOTAL_STATEMENTS)"
+              if [ "$LINE_RATE_INT" -ge 80 ]; then
+                HEALTH="✔"
+              elif [ "$LINE_RATE_INT" -ge 50 ]; then
+                HEALTH="➖"
+              else
+                HEALTH="❌"
+              fi
+            fi
+            echo "| All files | $LINE_RATE | 0 | $HEALTH |" >> $GITHUB_STEP_SUMMARY
+            echo "| Summary | $SUMMARY | 0 | $HEALTH |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No se encontró clover.xml para Jest" >> $GITHUB_STEP_SUMMARY
+            echo "| All files | N/A | 0 | ❌ |" >> $GITHUB_STEP_SUMMARY
+            echo "| Summary | N/A | 0 | ❌ |" >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+      - name: Copy staticwebapp.config.json to dist
+        run: |
+          cp frontend/staticwebapp.config.json frontend/dist/
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-artifact
+          path: frontend/dist/
+          if-no-files-found: error
+
+  #==========================================
+  # STAGE: DEPLOY TO QA AND INTEGRATION TEST
+  #==========================================
+  deploy-backend-qa:
+    needs: build-and-test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-artifact
+          path: .
+      - name: Create Backend Environment File
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_QA_URL }}" > env.config
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_QA_URL }}" >> env.config
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'Inversur-QA'
+          publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE_QA }}
+      - name: Start Azure App Service
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az webapp start --name Inversur-QA --resource-group Inversur
+
+  deploy-frontend-qa:
+    needs: build-and-test-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-artifact
+          path: frontend/dist/
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_QA }}
+          action: "upload"
+          app_location: "frontend/dist"
+          skip_app_build: true
+  
+  integration-tests:
+    needs: [deploy-backend-qa, deploy-frontend-qa]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+      - name: Create Frontend .env File
+        run: |
+          cd frontend
+          echo "VITE_API_URL_QA=${{ secrets.BACKEND_QA_URL }}" > .env
+          echo "VITE_API_URL_PROD=${{ secrets.BACKEND_PROD_URL }}" >> .env
+          echo "VITE_FRONTEND_URL=${{ secrets.FRONTEND_QA_URL }}" >> .env
+      - name: Run Cypress Tests with Coverage
+        run: |
+          cd frontend
+          npx cypress run --reporter mocha-junit-reporter --reporter-options "mochaFile=cypress/results.xml"
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Cypress Results
+          path: frontend/cypress/results.xml
+          reporter: java-junit
+
+  #=======================
+  # STAGE: DEPLOY TO PROD
+  #=======================
+  deploy-backend-prod:
+    needs: integration-tests
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-artifact
+          path: .
+      - name: Create Backend Environment File
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_PROD_URL }}" > env.config
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_PROD_URL }}" >> env.config
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'Inversur'
+          publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE_PROD }}
+      - name: Start Azure App Service
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az webapp start --name Inversur --resource-group Inversur
+
+  deploy-frontend-prod:
+    needs: integration-tests
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-artifact
+          path: frontend/dist/
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}
+          action: "upload"
+          app_location: "frontend/dist"
+          skip_app_build: true
