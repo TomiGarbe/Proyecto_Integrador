@@ -1,15 +1,40 @@
-.nav-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1rem;
-  }
-  
-  @media (max-width: 991px) {
-    .nav-right {
-      flex-direction: row;
-      justify-content: flex-end;
-      width: 100%;
-    }
-  }
-  
+/* Estilo para el navbar */
+.custom-navbar {
+  padding-left: 0;
+}
+
+/* Estilo para la marca del navbar (logo) */
+.custom-navbar-brand {
+  margin-left: 1rem;
+}
+
+/* Estilo para la imagen del logo */
+.custom-logo {
+  object-fit: contain;
+}
+
+/* Estilo para los enlaces del nav */
+.custom-nav-links {
+  gap: 2rem;
+  margin-left: 2rem;
+}
+
+/* Contenedor del ícono de usuario + campana */
+.icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Ícono de usuario */
+.icon-user {
+  color: white;
+}
+
+/* Ícono de campana */
+.icon-bell {
+  position: absolute;
+  bottom: -2px;
+  right: -8px;
+  color: white;
+}

@@ -1,18 +1,21 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Navbar as BootstrapNavbar, Nav, Container, NavDropdown, Image, Modal, Button } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Navbar as BootstrapNavbar, Nav, Container, Image, Modal, Button } from 'react-bootstrap';
 import logoInversur from '../assets/logo_inversur.png';
-import { FaUser, FaBell } from 'react-icons/fa'; // Importamos íconos de usuario y campanita
-import '../styles/navbar.css'; 
+import { FaRegBell, FaUser } from 'react-icons/fa';
+import '../styles/navbar.css';
 
 const Navbar = () => {
-  const user = JSON.parse(localStorage.getItem('user')) || {};
-  const [showNotifications, setShowNotifications] = useState(false); // Estado para el modal de notificaciones
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleShowNotifications = () => setShowNotifications(true);
   const handleCloseNotifications = () => setShowNotifications(false);
 
-  // Ejemplo de notificaciones (puedes reemplazar esto con datos de una API)
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
   const notifications = [
     { id: 1, message: 'Nueva obra asignada a Cuadrilla #1', time: 'Hace 5 minutos' },
     { id: 2, message: 'Mantenimiento preventivo programado', time: 'Hace 1 hora' },
@@ -21,19 +24,19 @@ const Navbar = () => {
 
   return (
     <>
-      <BootstrapNavbar bg="dark" variant="dark" expand="lg" style={{ paddingLeft: '0' }}>
+      <BootstrapNavbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
         <Container fluid>
-          <BootstrapNavbar.Brand as={Link} to="/" className="d-flex align-items-center" style={{ marginLeft: '1rem' }}>
+          <BootstrapNavbar.Brand as={Link} to="/" className="d-flex align-items-center custom-navbar-brand">
             <Image
-              src={logoInversur} // Usamos el logo importado
+              src={logoInversur}
               height="65"
               alt="Inversur Logo"
-              style={{ objectFit: 'contain' }}
+              className="custom-logo"
             />
           </BootstrapNavbar.Brand>
           <BootstrapNavbar.Toggle aria-controls="basic-navbar-nav" />
           <BootstrapNavbar.Collapse id="basic-navbar-nav">
-            <Nav className="me-auto" style={{ gap: '2rem', marginLeft: '2rem' }}>
+            <Nav className="me-auto custom-nav-links">
               <Nav.Link /*as={Link} to="/users"*/>Usuarios</Nav.Link>
               <Nav.Link as={Link} to="/sucursales">Sucursales</Nav.Link>
               <Nav.Link /*as={Link} to="/cuadrillas"*/>Cuadrillas</Nav.Link>
@@ -44,32 +47,17 @@ const Navbar = () => {
               <Nav.Link /*as={Link} to="/reportes"*/>Reportes</Nav.Link>
             </Nav>
             <Nav className="nav-right">
-              {/* Botón de notificaciones */}
               <Nav.Link onClick={handleShowNotifications}>
-                <FaBell size={20} style={{ color: 'white' }} />
+                <div className="icon-container">
+                  <FaUser size={22} className="icon-user" />
+                  <FaRegBell size={14} className="icon-bell" />
+                </div>
               </Nav.Link>
-              {/* Dropdown de usuario */}
-              <NavDropdown 
-                title={
-                  <div className="d-flex align-items-center">
-                    <FaUser size={24} style={{ marginRight: '0.8rem', color: 'white' }} />
-                    <span>{user.nombre || 'Usuario'}</span>
-                  </div>
-                }
-                id="user-nav-dropdown"
-                align="end"
-              >
-                <NavDropdown.Item /*as={Link} to="/profile"*/>Mi Perfil</NavDropdown.Item>
-                <NavDropdown.Item /*as={Link} to="/settings"*/>Configuración</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item>Cerrar Sesión</NavDropdown.Item>
-              </NavDropdown>
             </Nav>
           </BootstrapNavbar.Collapse>
         </Container>
       </BootstrapNavbar>
 
-      {/* Modal de Notificaciones */}
       <Modal show={showNotifications} onHide={handleCloseNotifications} centered>
         <Modal.Header closeButton>
           <Modal.Title>Notificaciones</Modal.Title>
@@ -86,7 +74,10 @@ const Navbar = () => {
             <p>No tienes notificaciones.</p>
           )}
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="d-flex justify-content-between">
+          <Button variant="danger" onClick={handleLogout}>
+            Cerrar Sesión
+          </Button>
           <Button variant="secondary" onClick={handleCloseNotifications}>
             Cerrar
           </Button>

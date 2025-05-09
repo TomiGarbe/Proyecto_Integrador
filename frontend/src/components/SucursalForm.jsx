@@ -74,22 +74,18 @@ const SucursalForm = ({ sucursal, onClose }) => {
     }
   };
 
-  const handleDeleteZona = async (id, e) => {
-    e.stopPropagation();
-    const confirmDelete = window.confirm(`¿Estás seguro de que quieres eliminar esta zona?`);
-    if (confirmDelete) {
-      try {
-        await deleteZona(id);
-        setZonas(zonas.filter((zona) => zona.id !== id));
-        if (formData.zona === zonas.find((z) => z.id === id)?.nombre) {
-          setFormData({ ...formData, zona: null });
-        }
-        setError(null);
-      } catch (error) {
-        console.error('Error deleting zona:', error);
-        const errorMessage = error.response?.data?.detail || 'No se pudo eliminar la zona. Puede estar en uso.';
-        setError(errorMessage);
+  const handleDeleteZona = async (id) => {
+    try {
+      await deleteZona(id);
+      setZonas(zonas.filter((zona) => zona.id !== id));
+      if (formData.zona === zonas.find((z) => z.id === id)?.nombre) {
+        setFormData({ ...formData, zona: null });
       }
+      setError(null);
+    } catch (error) {
+      console.error('Error deleting zona:', error);
+      const errorMessage = error.response?.data?.detail || 'No se pudo eliminar la zona. Puede estar en uso.';
+      setError(errorMessage);
     }
   };
 
@@ -124,7 +120,7 @@ const SucursalForm = ({ sucursal, onClose }) => {
           </div>
         )}
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="nombre">
             <Form.Label className="required required-asterisk">Nombre</Form.Label>
             <Form.Control
               type="text"
@@ -134,7 +130,7 @@ const SucursalForm = ({ sucursal, onClose }) => {
               required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="zona">
             <Form.Label className="required required-asterisk">Zona</Form.Label>
             <Dropdown show={dropdownOpen} onToggle={toggleDropdown} ref={dropdownRef}>
               <Dropdown.Toggle
@@ -191,7 +187,7 @@ const SucursalForm = ({ sucursal, onClose }) => {
               </InputGroup>
             )}
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="direccion">
             <Form.Label className="required required-asterisk">Dirección</Form.Label>
             <Form.Control
               type="text"
@@ -201,7 +197,7 @@ const SucursalForm = ({ sucursal, onClose }) => {
               required
             />
           </Form.Group>
-          <Form.Group className="mb-3">
+          <Form.Group className="mb-3" controlId="superficie">
             <Form.Label>Superficie</Form.Label>
             <Form.Control
               type="text"
