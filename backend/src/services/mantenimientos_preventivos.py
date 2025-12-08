@@ -34,6 +34,11 @@ def _ensure_usuario(current_entity: dict):
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
 
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+
 def _get_cliente(db: Session, cliente_id: int) -> Cliente:
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
@@ -183,7 +188,7 @@ async def update_mantenimiento_preventivo(
     extendido: Optional[datetime] = None,
     estado: Optional[str] = None,
 ):
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
 
@@ -282,7 +287,7 @@ def delete_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_
 
 
 def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
 
@@ -305,7 +310,7 @@ def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name:
 
 
 def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
 

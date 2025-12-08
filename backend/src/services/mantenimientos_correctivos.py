@@ -20,6 +20,11 @@ def _ensure_usuario(current_entity: dict):
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
 
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+
 def _get_cliente(db: Session, cliente_id: int) -> Cliente:
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
@@ -130,7 +135,7 @@ async def update_mantenimiento_correctivo(
     prioridad: Optional[str] = None,
     extendido: Optional[datetime] = None,
 ):
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
 
@@ -239,7 +244,7 @@ def delete_mantenimiento_correctivo(db: Session, mantenimiento_id: int, current_
 
 
 def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
     delete_file_in_folder(GOOGLE_CLOUD_BUCKET_NAME, f"mantenimientos_correctivos/{mantenimiento_id}/planilla/", file_name)
@@ -253,7 +258,7 @@ def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name:
 
 
 def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
 
     db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
 
