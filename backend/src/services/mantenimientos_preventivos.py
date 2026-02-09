@@ -26,18 +26,15 @@ FRECUENCIA_PERIODOS = {
     "semestral": 6,
 }
 
-
 def _ensure_usuario(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity.get("type") != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
-
 def _ensure_entity(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
-
 
 def _get_cliente(db: Session, cliente_id: int) -> Cliente:
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
@@ -45,13 +42,11 @@ def _get_cliente(db: Session, cliente_id: int) -> Cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
-
 def _get_sucursal(db: Session, sucursal_id: int) -> Sucursal:
     sucursal = db.query(Sucursal).filter(Sucursal.id == sucursal_id).first()
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return sucursal
-
 
 def _get_cuadrilla(db: Session, cuadrilla_id: int) -> Cuadrilla:
     cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
@@ -59,18 +54,15 @@ def _get_cuadrilla(db: Session, cuadrilla_id: int) -> Cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
     return cuadrilla
 
-
 def _ensure_cliente_sucursal(cliente_id: int, sucursal: Sucursal):
     if sucursal.cliente_id != cliente_id:
         raise HTTPException(status_code=400, detail="La sucursal no pertenece al cliente seleccionado")
-
 
 def _normalize_frecuencia(frecuencia: str) -> str:
     freq = frecuencia.lower()
     if freq not in FRECUENCIA_PERIODOS:
         raise HTTPException(status_code=400, detail="Frecuencia de preventivo inválida")
     return freq
-
 
 def _calculate_period_range(fecha: date, frecuencia: str) -> Tuple[date, date]:
     freq_key = _normalize_frecuencia(frecuencia)
@@ -87,7 +79,6 @@ def _calculate_period_range(fecha: date, frecuencia: str) -> Tuple[date, date]:
     end_day = monthrange(end_year, end_month)[1]
     end_date = date(end_year, end_month, end_day)
     return start_date, end_date
-
 
 def _ensure_preventivo_period(
     db: Session,
@@ -111,17 +102,16 @@ def _ensure_preventivo_period(
             detail="Ya existe un mantenimiento preventivo para esta sucursal en el período correspondiente a su frecuencia",
         )
 
-
-def get_mantenimientos_preventivos(db: Session):
+def get_mantenimientos_preventivos(db: Session, current_entity: dict):
+    _ensure_usuario(current_entity)
     return db.query(MantenimientoPreventivo).all()
 
-
-def get_mantenimiento_preventivo(db: Session, mantenimiento_id: int):
+def get_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_entity: dict):
+    _ensure_usuario(current_entity)
     mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == mantenimiento_id).first()
     if not mantenimiento:
         raise HTTPException(status_code=404, detail="Mantenimiento preventivo no encontrado")
     return mantenimiento
-
 
 async def create_mantenimiento_preventivo(
     db: Session,
@@ -171,7 +161,6 @@ async def create_mantenimiento_preventivo(
         firebase_uid=cuadrilla.firebase_uid,
     )
     return db_mantenimiento
-
 
 async def update_mantenimiento_preventivo(
     db: Session,
@@ -275,7 +264,6 @@ async def update_mantenimiento_preventivo(
     update_preventivo(db_mantenimiento)
     return db_mantenimiento
 
-
 def delete_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_entity: dict):
     _ensure_usuario(current_entity)
 
@@ -284,7 +272,6 @@ def delete_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_
     db.commit()
     delete_preventivo(mantenimiento_id)
     return {"message": f"Mantenimiento preventivo con id {mantenimiento_id} eliminado"}
-
 
 def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
     _ensure_entity(current_entity)
@@ -307,7 +294,6 @@ def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name:
     db.commit()
     update_preventivo(db_mantenimiento)
     return True
-
 
 def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
     _ensure_entity(current_entity)

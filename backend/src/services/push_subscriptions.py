@@ -22,7 +22,6 @@ def save_subscription(db_session: Session, current_entity: dict, sub: PushSubscr
 
     return {"message": "Subscription saved"}
 
-
 def get_subscriptions(db_session: Session, firebase_uid: str):
     return db_session.query(PushSubscription).filter(PushSubscription.firebase_uid == firebase_uid).all()
 

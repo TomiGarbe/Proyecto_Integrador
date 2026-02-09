@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Text, DateTime, func, Boolean
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Text, DateTime, func, Boolean, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
@@ -203,3 +203,25 @@ class ColumnPreference(Base):
     firebase_uid = Column(String, nullable=False, index=True)
     page = Column(String, nullable=False)
     columns = Column(Text, nullable=False)
+
+class Material(Base):
+    __tablename__ = "materiales"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(100), nullable=False)
+    categoria = Column(String(100))
+    unidad_medida = Column(String(20), nullable=False)
+    descripcion = Column(Text)
+    stock_actual = Column(Numeric(10,2), default=0)
+    stock_minimo = Column(Numeric(10,2), default=0)
+
+class MovimientoStock(Base):
+    __tablename__ = "movimientos_stock"
+
+    id = Column(Integer, primary_key=True, index=True)
+    material_id = Column(Integer, ForeignKey("materiales.id"), nullable=False)
+    tipo_movimiento = Column(String(20), nullable=False)
+    cantidad = Column(Numeric(10,2), nullable=False)
+    obra_id = Column(Integer, ForeignKey("obras.id"), nullable=True)
+    tipo_obra = Column(String(20), nullable=True)
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))

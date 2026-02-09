@@ -12,18 +12,15 @@ from services.notificaciones import notify_user, notify_users_correctivo
 
 GOOGLE_CLOUD_BUCKET_NAME = os.getenv("GOOGLE_CLOUD_BUCKET_NAME")
 
-
 def _ensure_usuario(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity.get("type") != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
-
 def _ensure_entity(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
-
 
 def _get_cliente(db: Session, cliente_id: int) -> Cliente:
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
@@ -31,18 +28,15 @@ def _get_cliente(db: Session, cliente_id: int) -> Cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
-
 def _get_sucursal(db: Session, sucursal_id: int) -> Sucursal:
     sucursal = db.query(Sucursal).filter(Sucursal.id == sucursal_id).first()
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return sucursal
 
-
 def _ensure_cliente_sucursal(cliente_id: int, sucursal: Sucursal):
     if sucursal.cliente_id != cliente_id:
         raise HTTPException(status_code=400, detail="La sucursal no pertenece al cliente seleccionado")
-
 
 def _get_cuadrilla(db: Session, cuadrilla_id: int) -> Cuadrilla:
     cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
@@ -50,17 +44,16 @@ def _get_cuadrilla(db: Session, cuadrilla_id: int) -> Cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
     return cuadrilla
 
-
-def get_mantenimientos_correctivos(db: Session):
+def get_mantenimientos_correctivos(db: Session, current_entity: dict):
+    _ensure_entity(current_entity)
     return db.query(MantenimientoCorrectivo).all()
 
-
-def get_mantenimiento_correctivo(db: Session, mantenimiento_id: int):
+def get_mantenimiento_correctivo(db: Session, mantenimiento_id: int, current_entity: dict):
+    _ensure_entity(current_entity)
     mantenimiento = db.query(MantenimientoCorrectivo).filter(MantenimientoCorrectivo.id == mantenimiento_id).first()
     if not mantenimiento:
         raise HTTPException(status_code=404, detail="Mantenimiento correctivo no encontrado")
     return mantenimiento
-
 
 async def create_mantenimiento_correctivo(
     db: Session,
@@ -115,7 +108,6 @@ async def create_mantenimiento_correctivo(
             firebase_uid=cuadrilla.firebase_uid,
         )
     return db_mantenimiento
-
 
 async def update_mantenimiento_correctivo(
     db: Session,
@@ -233,7 +225,6 @@ async def update_mantenimiento_correctivo(
 
     return db_mantenimiento
 
-
 def delete_mantenimiento_correctivo(db: Session, mantenimiento_id: int, current_entity: dict):
     _ensure_usuario(current_entity)
     db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
@@ -241,7 +232,6 @@ def delete_mantenimiento_correctivo(db: Session, mantenimiento_id: int, current_
     db.commit()
     delete_correctivo(mantenimiento_id)
     return {"message": f"Mantenimiento correctivo con id {mantenimiento_id} eliminado"}
-
 
 def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
     _ensure_entity(current_entity)
@@ -255,7 +245,6 @@ def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name:
     db.refresh(db_mantenimiento)
     update_correctivo(db_mantenimiento)
     return True
-
 
 def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
     _ensure_entity(current_entity)

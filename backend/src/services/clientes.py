@@ -7,24 +7,26 @@ from firebase_admin import db
 from api.models import Cliente
 from auth.firebase import initialize_firebase
 
-
 def _ensure_usuario(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity.get("type") != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
 
-def get_clientes(db_session: Session):
+def get_clientes(db_session: Session, current_entity: dict):
+    _ensure_entity(current_entity)
     return db_session.query(Cliente).all()
 
-
-def get_cliente(db_session: Session, cliente_id: int):
+def get_cliente(db_session: Session, cliente_id: int, current_entity: dict):
+    _ensure_entity(current_entity)
     cliente = db_session.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
-
 
 def create_cliente(db_session: Session, nombre: str, contacto: str, email: str, current_entity: dict):
     _ensure_usuario(current_entity)
@@ -38,7 +40,6 @@ def create_cliente(db_session: Session, nombre: str, contacto: str, email: str, 
         db_session.rollback()
         raise HTTPException(status_code=500, detail=f"Error guardando cliente: {str(exc)}")
     return cliente
-
 
 def update_cliente(
     db_session: Session,
@@ -65,7 +66,6 @@ def update_cliente(
         db_session.rollback()
         raise HTTPException(status_code=500, detail=f"Error actualizando cliente: {str(exc)}")
     return cliente
-
 
 def delete_cliente(db_session: Session, cliente_id: int, current_entity: dict):
     _ensure_usuario(current_entity)

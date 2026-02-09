@@ -9,8 +9,9 @@ from datetime import date, datetime
 router = APIRouter(prefix="/mantenimientos-preventivos", tags=["mantenimientos-preventivos"])
 
 @router.get("/", response_model=List[dict])
-def mantenimientos_preventivos_get(db: Session = Depends(get_db)):
-    mantenimientos = get_mantenimientos_preventivos(db)
+def mantenimientos_preventivos_get(request: Request, db: Session = Depends(get_db)):
+    current_entity = request.state.current_entity
+    mantenimientos = get_mantenimientos_preventivos(db, current_entity)
     return [
         {
             "id": m.id,
@@ -29,8 +30,9 @@ def mantenimientos_preventivos_get(db: Session = Depends(get_db)):
     ]
 
 @router.get("/{mantenimiento_id}", response_model=dict)
-def mantenimiento_preventivo_get(mantenimiento_id: int, db: Session = Depends(get_db)):
-    mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
+def mantenimiento_preventivo_get(mantenimiento_id: int, request: Request, db: Session = Depends(get_db)):
+    current_entity = request.state.current_entity
+    mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id, current_entity)
     return {
         "id": mantenimiento.id,
         "cliente_id": mantenimiento.cliente_id,

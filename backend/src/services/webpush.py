@@ -8,7 +8,6 @@ from api.models import PushSubscription
 load_dotenv(dotenv_path="./env.config")
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 
-
 def send_webpush_notification(db_session: Session, firebase_uid: str, title: str, body: str):
     if not VAPID_PRIVATE_KEY:
         return {"message": "Web push not configured"}

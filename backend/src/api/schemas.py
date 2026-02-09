@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from enum import Enum
+from decimal import Decimal
 from datetime import date
 from typing import Optional, Dict, Any
 
@@ -47,6 +48,17 @@ class Frecuencia(str, Enum):
     TRIMESTRAL = "Trimestral"
     CUATRIMESTRAL = "Cuatrimestral"
     SEMESTRAL = "Semestral"
+
+# Enum para los tipos de movimientos de stock
+class TipoMovimiento(str, Enum):
+    ingreso = "ingreso"
+    egreso = "egreso"
+    ajuste = "ajuste"
+
+# Enum para los tipos de obra en movimientos de stock
+class TipoObra(str, Enum):
+    correctivo = "correctivo"
+    preventivo = "preventivo"
 
 # Esquemas para Usuario
 class UserCreate(BaseModel):
@@ -158,3 +170,17 @@ class ColumnPreferenceRead(BaseModel):
 
 class ColumnPreferenceUpdate(BaseModel):
     columns: list[str]
+
+class MaterialCreate(BaseModel):
+    nombre: str
+    categoria: Optional[str]
+    unidad_medida: str
+    descripcion: Optional[str]
+    stock_minimo: Decimal = 0
+
+class MovimientoStockCreate(BaseModel):
+    material_id: int
+    tipo_movimiento: TipoMovimiento
+    cantidad: Decimal
+    obra_id: Optional[int] = None
+    tipo_obra: Optional[TipoObra] = None

@@ -2,14 +2,22 @@ from sqlalchemy.orm import Session
 from api.models import Zona, Sucursal, Cuadrilla
 from fastapi import HTTPException
 
-def get_zonas(db: Session):
+def _ensure_usuario(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    if current_entity.get("type") != "usuario":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+def get_zonas(db: Session, current_entity: dict):
+    _ensure_entity(current_entity)
     return db.query(Zona).all()
 
 def create_zona(db: Session, nombre: str, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
-    if current_entity["type"] != "usuario":
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    _ensure_usuario(current_entity)
     
     existing_zona = db.query(Zona).filter(Zona.nombre == nombre).first()
     if existing_zona:
@@ -21,10 +29,7 @@ def create_zona(db: Session, nombre: str, current_entity: dict):
     return db_zona
 
 def delete_zona(db: Session, id: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
-    if current_entity["type"] != "usuario":
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    _ensure_usuario(current_entity)
     
     zona = db.query(Zona).filter(Zona.id == id).first()
     if not zona:

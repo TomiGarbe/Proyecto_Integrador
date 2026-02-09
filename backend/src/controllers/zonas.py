@@ -7,10 +7,10 @@ from typing import List
 
 router = APIRouter(prefix="/zonas", tags=["zonas"])
 
-# Endpoints
 @router.get("/", response_model=List[dict])
-def zonas_get(db: Session = Depends(get_db)):
-    zonas = get_zonas(db)
+def zonas_get(request: Request, db: Session = Depends(get_db)):
+    current_entity = request.state.current_entity
+    zonas = get_zonas(db, current_entity)
     return [{"id": z.id, "nombre": z.nombre} for z in zonas]
 
 @router.post("/", response_model=dict)

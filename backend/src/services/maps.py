@@ -19,9 +19,18 @@ class Usuarios(BaseModel):
     lat: float
     lng: float
 
-async def get_sucursales_locations(current_entity: dict) -> List[Sucursal]:
+def _ensure_usuario(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
+    if current_entity.get("type") != "usuario":
+        raise HTTPException(status_code=403, detail="No tienes permisos")
+
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+async def get_sucursales_locations(current_entity: dict) -> List[Sucursal]:
+    _ensure_entity(current_entity)
     
     try:
         initialize_firebase()
@@ -42,10 +51,7 @@ async def get_sucursales_locations(current_entity: dict) -> List[Sucursal]:
         raise HTTPException(status_code=500, detail=f"Error obteniendo sucursales de Firebase: {str(e)}")
 
 async def get_users_locations(current_entity: dict) -> List[Usuarios]:
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
-    if current_entity["type"] != "usuario":
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+    _ensure_usuario(current_entity)
     
     try:
         initialize_firebase()
@@ -71,24 +77,23 @@ async def get_users_locations(current_entity: dict) -> List[Usuarios]:
         raise HTTPException(status_code=500, detail=f"Error fetching users: {str(e)}")
     
 def get_correctivos(db_session: Session, id_cuadrilla: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
+
     correctivos = db_session.query(CorrectivoSeleccionado).filter(CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
     if not correctivos:
         return []
     return correctivos
 
 def get_preventivos(db_session: Session, id_cuadrilla: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
+
     preventivos = db_session.query(PreventivoSeleccionado).filter(PreventivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
     if not preventivos:
         return []
     return preventivos
 
 async def update_user_location(current_entity: dict, firebase_uid: str, user_id: str, tipo: str, name: str, lat: float, lng: float):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     try:
         initialize_firebase()
@@ -105,8 +110,7 @@ async def update_user_location(current_entity: dict, firebase_uid: str, user_id:
         raise HTTPException(status_code=500, detail=f"Error actualizando ubicación: {str(e)}")
 
 def update_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, id_sucursal: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     existing_correctivo = db_session.query(CorrectivoSeleccionado).filter(
         CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
@@ -127,8 +131,7 @@ def update_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: 
         raise HTTPException(status_code=500, detail=f"Error al guardar correctivo: {str(e)}")
 
 def update_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, id_sucursal: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     existing_preventivo = db_session.query(PreventivoSeleccionado).filter(
         PreventivoSeleccionado.id_cuadrilla == id_cuadrilla,
@@ -149,8 +152,7 @@ def update_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: 
         raise HTTPException(status_code=500, detail=f"Error al guardar preventivo: {str(e)}")
     
 def delete_sucursal(db_session: Session, id_cuadrilla: int, id_sucursal: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     correctivos = db_session.query(CorrectivoSeleccionado).filter(
         CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
@@ -172,8 +174,7 @@ def delete_sucursal(db_session: Session, id_cuadrilla: int, id_sucursal: int, cu
     return {"message": "Seleccion de sucursal eliminada"}
 
 def delete_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     correctivo = db_session.query(CorrectivoSeleccionado).filter(
         CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
@@ -187,8 +188,7 @@ def delete_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: 
     return {"message": "Seleccion de correctivo eliminada"}
 
 def delete_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
         
     preventivo = db_session.query(PreventivoSeleccionado).filter(
         PreventivoSeleccionado.id_cuadrilla == id_cuadrilla,
@@ -202,8 +202,7 @@ def delete_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: 
     return {"message": "Seleccion de preventivo eliminada"}
 
 def delete_selection(db_session: Session, id_cuadrilla: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     correctivos = db_session.query(CorrectivoSeleccionado).filter(CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
     if correctivos:

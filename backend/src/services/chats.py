@@ -8,17 +8,21 @@ import os
 
 GOOGLE_CLOUD_BUCKET_NAME = os.getenv("GOOGLE_CLOUD_BUCKET_NAME")
 
-def get_chat_correctivo(db_session: Session, mantenimiento_id: int, current_entity: dict):
+def _ensure_entity(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
+
+def get_chat_correctivo(db_session: Session, mantenimiento_id: int, current_entity: dict):
+    _ensure_entity(current_entity)
+
     chat = db_session.query(MensajeCorrectivo).filter(MensajeCorrectivo.id_mantenimiento == mantenimiento_id).all()
     if not chat:
         return {"message": "No hay mensajes"}
     return chat
 
 def get_chat_preventivo(db_session: Session, mantenimiento_id: int, current_entity: dict):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
+
     chat = db_session.query(MensajePreventivo).filter(MensajePreventivo.id_mantenimiento == mantenimiento_id).all()
     if not chat:
         return {"message": "No hay mensajes"}
@@ -33,8 +37,7 @@ async def send_message_correctivo(
     texto: Optional[str] = None,
     archivo: Optional[UploadFile] = None,
     ):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
@@ -83,8 +86,7 @@ async def send_message_preventivo(
     texto: Optional[str] = None,
     archivo: Optional[UploadFile] = None,
     ):
-    if not current_entity:
-        raise HTTPException(status_code=401, detail="Autenticación requerida")
+    _ensure_entity(current_entity)
     
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:

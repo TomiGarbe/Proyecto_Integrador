@@ -15,7 +15,6 @@ from services.sucursales import (
 
 router = APIRouter(tags=["sucursales"])
 
-
 def _serialize_sucursal(sucursal) -> dict:
     return {
         "id": sucursal.id,
@@ -27,12 +26,11 @@ def _serialize_sucursal(sucursal) -> dict:
         "frecuencia_preventivo": sucursal.frecuencia_preventivo,
     }
 
-
 @router.get("/clientes/{cliente_id}/sucursales", response_model=List[dict])
-def sucursales_get(cliente_id: int, db: Session = Depends(get_db)):
-    sucursales = get_sucursales_by_cliente(db, cliente_id)
+def sucursales_get(cliente_id: int, request: Request, db: Session = Depends(get_db)):
+    current_entity = request.state.current_entity
+    sucursales = get_sucursales_by_cliente(db, cliente_id, current_entity)
     return [_serialize_sucursal(s) for s in sucursales]
-
 
 @router.post("/clientes/{cliente_id}/sucursales", response_model=dict)
 def sucursal_create(cliente_id: int, sucursal: SucursalCreate, request: Request, db: Session = Depends(get_db)):
@@ -51,12 +49,11 @@ def sucursal_create(cliente_id: int, sucursal: SucursalCreate, request: Request,
     )
     return _serialize_sucursal(new_sucursal)
 
-
 @router.get("/sucursales/{sucursal_id}", response_model=dict)
-def sucursal_get(sucursal_id: int, db: Session = Depends(get_db)):
-    sucursal = get_sucursal(db, sucursal_id)
+def sucursal_get(sucursal_id: int, request: Request, db: Session = Depends(get_db)):
+    current_entity = request.state.current_entity
+    sucursal = get_sucursal(db, sucursal_id, current_entity)
     return _serialize_sucursal(sucursal)
-
 
 @router.put("/sucursales/{sucursal_id}", response_model=dict)
 def sucursal_update_endpoint(sucursal_id: int, sucursal: SucursalUpdate, request: Request, db: Session = Depends(get_db)):
@@ -76,7 +73,6 @@ def sucursal_update_endpoint(sucursal_id: int, sucursal: SucursalUpdate, request
         sucursal.cliente_id,
     )
     return _serialize_sucursal(updated_sucursal)
-
 
 @router.delete("/sucursales/{sucursal_id}", response_model=dict)
 def sucursal_delete(sucursal_id: int, request: Request, db: Session = Depends(get_db)):

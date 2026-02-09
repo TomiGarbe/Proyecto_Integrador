@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from api.models import ColumnPreference
 import json
 
-
 def get_preferences(db: Session, firebase_uid: str, page: str):
     pref = db.query(ColumnPreference).filter_by(firebase_uid=firebase_uid, page=page).first()
     if not pref:
@@ -11,7 +10,6 @@ def get_preferences(db: Session, firebase_uid: str, page: str):
         return json.loads(pref.columns)
     except json.JSONDecodeError:
         return []
-
 
 def save_preferences(db: Session, firebase_uid: str, page: str, columns: list[str]):
     pref = db.query(ColumnPreference).filter_by(firebase_uid=firebase_uid, page=page).first()

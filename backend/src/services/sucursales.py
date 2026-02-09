@@ -9,13 +9,15 @@ from auth.firebase import initialize_firebase
 
 ALLOWED_FRECUENCIAS = {"Mensual", "Trimestral", "Cuatrimestral", "Semestral"}
 
-
 def _ensure_usuario(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity.get("type") != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
+def _ensure_entity(current_entity: dict):
+    if not current_entity:
+        raise HTTPException(status_code=401, detail="Autenticación requerida")
 
 def _validate_direccion(direccion: Optional[dict]):
     if not isinstance(direccion, dict):
@@ -23,14 +25,12 @@ def _validate_direccion(direccion: Optional[dict]):
     if "address" not in direccion:
         raise HTTPException(status_code=400, detail="El campo direccion debe incluir address")
 
-
 def _validate_frecuencia(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
     if value not in ALLOWED_FRECUENCIAS:
         raise HTTPException(status_code=400, detail="Frecuencia de preventivo inválida")
     return value
-
 
 def _sync_firebase_sucursal(sucursal_id: int, nombre: str, direccion: Optional[dict]):
     if direccion is None:
@@ -48,7 +48,6 @@ def _sync_firebase_sucursal(sucursal_id: int, nombre: str, direccion: Optional[d
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error guardando en Firebase: {str(exc)}")
-
 
 def _update_firebase_sucursal(
     sucursal_id: int,
@@ -75,7 +74,6 @@ def _update_firebase_sucursal(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error actualizando en Firebase: {str(exc)}")
 
-
 def _delete_firebase_sucursal(sucursal_id: int):
     try:
         initialize_firebase()
@@ -84,25 +82,23 @@ def _delete_firebase_sucursal(sucursal_id: int):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error eliminando de Firebase: {str(exc)}")
 
-
 def _get_cliente(db_session: Session, cliente_id: int) -> Cliente:
     cliente = db_session.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
-
-def get_sucursales_by_cliente(db_session: Session, cliente_id: int):
+def get_sucursales_by_cliente(db_session: Session, cliente_id: int, current_entity: dict):
+    _ensure_entity(current_entity)
     _get_cliente(db_session, cliente_id)
     return db_session.query(Sucursal).filter(Sucursal.cliente_id == cliente_id).all()
 
-
-def get_sucursal(db_session: Session, sucursal_id: int):
+def get_sucursal(db_session: Session, sucursal_id: int, current_entity: dict):
+    _ensure_entity(current_entity)
     sucursal = db_session.query(Sucursal).filter(Sucursal.id == sucursal_id).first()
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return sucursal
-
 
 def create_sucursal(
     db_session: Session,
@@ -137,7 +133,6 @@ def create_sucursal(
 
     _sync_firebase_sucursal(sucursal.id, nombre, {**direccion, "cliente_id": cliente_id})
     return sucursal
-
 
 def update_sucursal(
     db_session: Session,
@@ -183,7 +178,6 @@ def update_sucursal(
     cliente_value = sucursal.cliente_id if cliente_changed else None
     _update_firebase_sucursal(sucursal.id, nombre, direccion, cliente_value)
     return sucursal
-
 
 def delete_sucursal(db_session: Session, sucursal_id: int, current_entity: dict):
     _ensure_usuario(current_entity)
