@@ -19,6 +19,8 @@ class Cliente(Base):
     email = Column(String, nullable=False)
 
     sucursales = relationship("Sucursal", back_populates="cliente", cascade="all, delete-orphan")
+    mantenimientos_preventivos = relationship("MantenimientoPreventivo", back_populates="cliente")
+    mantenimientos_correctivos = relationship("MantenimientoCorrectivo", back_populates="cliente")
 
 class Sucursal(Base):
     __tablename__ = "sucursal"
@@ -33,8 +35,7 @@ class Sucursal(Base):
     cliente = relationship("Cliente", back_populates="sucursales")
     mantenimientos_preventivos = relationship("MantenimientoPreventivo", back_populates="sucursal")
     mantenimientos_correctivos = relationship("MantenimientoCorrectivo", back_populates="sucursal")
-    correctivo_seleccionado = relationship("CorrectivoSeleccionado", back_populates="sucursal")
-    preventivo_seleccionado = relationship("PreventivoSeleccionado", back_populates="sucursal")
+    asignaciones = relationship("ObraSeleccionada", back_populates="sucursal")
 
 class Cuadrilla(Base):
     __tablename__ = "cuadrilla"
@@ -46,12 +47,26 @@ class Cuadrilla(Base):
     
     mantenimientos_preventivos = relationship("MantenimientoPreventivo", back_populates="cuadrilla")
     mantenimientos_correctivos = relationship("MantenimientoCorrectivo", back_populates="cuadrilla")
-    correctivo_seleccionado = relationship("CorrectivoSeleccionado", back_populates="cuadrilla")
-    preventivo_seleccionado = relationship("PreventivoSeleccionado", back_populates="cuadrilla")
+    asignaciones = relationship("ObraSeleccionada", back_populates="cuadrilla")
+
+class Obra(Base):
+    __tablename__ = "obra"
+
+    id = Column(Integer, primary_key=True)
+    tipo = Column(String(20), nullable=False)
+
+    mantenimiento_correctivo = relationship("MantenimientoCorrectivo", back_populates="obra", uselist=False)
+    mantenimiento_preventivo = relationship("MantenimientoPreventivo", back_populates="obra", uselist=False)
+    fotos = relationship("FotoObra", back_populates="obra", cascade="all, delete")
+    mensajes = relationship("Mensaje", back_populates="obra", cascade="all, delete")
+    notificaciones = relationship("Notificacion", back_populates="obra", cascade="all, delete")
+    movimientos_stock = relationship("MovimientoStock", back_populates="obra")
+    asignaciones = relationship("ObraSeleccionada", back_populates="obra")
 
 class MantenimientoPreventivo(Base):
     __tablename__ = "mantenimiento_preventivo"
     id = Column(Integer, primary_key=True)
+    obra_id = Column(Integer, ForeignKey("obra.id"), unique=True)
     cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     sucursal_id = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
     frecuencia = Column(String)
@@ -61,14 +76,11 @@ class MantenimientoPreventivo(Base):
     extendido = Column(DateTime, nullable=True)
     estado = Column(String)
 
-    cliente = relationship("Cliente")
+    obra = relationship("Obra", back_populates="mantenimiento_preventivo")
+    cliente = relationship("Cliente", back_populates="mantenimientos_preventivos")
     sucursal = relationship("Sucursal", back_populates="mantenimientos_preventivos")
     cuadrilla = relationship("Cuadrilla", back_populates="mantenimientos_preventivos")
-    preventivo_seleccionado = relationship("PreventivoSeleccionado", back_populates="mantenimiento_preventivo")
-    notificacion_preventivo = relationship("Notificacion_Preventivo", back_populates="mantenimiento_preventivo")
-    mensaje_preventivo = relationship("MensajePreventivo", backref="mantenimiento")
     planillas = relationship("MantenimientoPreventivoPlanilla", backref="mantenimiento")
-    fotos = relationship("MantenimientoPreventivoFoto", backref="mantenimiento")
     
 class MantenimientoPreventivoPlanilla(Base):
     __tablename__ = "mantenimiento_preventivo_planilla"
@@ -76,15 +88,10 @@ class MantenimientoPreventivoPlanilla(Base):
     mantenimiento_id = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
     url = Column(String, nullable=False)
 
-class MantenimientoPreventivoFoto(Base):
-    __tablename__ = "mantenimiento_preventivo_foto"
-    id = Column(Integer, primary_key=True)
-    mantenimiento_id = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
-    url = Column(String, nullable=False)
-
 class MantenimientoCorrectivo(Base):
     __tablename__ = "mantenimiento_correctivo"
     id = Column(Integer, primary_key=True)
+    obra_id = Column(Integer, ForeignKey("obra.id"), unique=True)
     cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     sucursal_id = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
     id_cuadrilla = Column(Integer, ForeignKey("cuadrilla.id"))
@@ -98,19 +105,18 @@ class MantenimientoCorrectivo(Base):
     prioridad = Column(String)
     extendido = Column(DateTime, nullable=True)
     
-    cliente = relationship("Cliente")
+    obra = relationship("Obra", back_populates="mantenimiento_correctivo")
+    cliente = relationship("Cliente", back_populates="mantenimientos_correctivos")
     sucursal = relationship("Sucursal", back_populates="mantenimientos_correctivos")
     cuadrilla = relationship("Cuadrilla", back_populates="mantenimientos_correctivos")
-    correctivo_seleccionado = relationship("CorrectivoSeleccionado", back_populates="mantenimiento_correctivo")
-    notificacion_correctivo = relationship("Notificacion_Correctivo", back_populates="mantenimiento_correctivo")
-    mensaje_correctivo = relationship("MensajeCorrectivo", backref="mantenimiento")
-    fotos = relationship("MantenimientoCorrectivoFoto", backref="mantenimiento")
 
-class MantenimientoCorrectivoFoto(Base):
-    __tablename__ = "mantenimiento_correctivo_foto"
+class FotoObra(Base):
+    __tablename__ = "foto_obra"
     id = Column(Integer, primary_key=True)
-    mantenimiento_id = Column(Integer, ForeignKey("mantenimiento_correctivo.id"))
+    obra_id = Column(Integer, ForeignKey("obra.id"))
     url = Column(String, nullable=False)
+
+    obra = relationship("Obra", back_populates="fotos")
 
 class Usuario(Base):
     __tablename__ = "usuario"
@@ -120,27 +126,16 @@ class Usuario(Base):
     rol = Column(String)
     firebase_uid = Column(String, unique=True, nullable=True)  # ID de Firebase
 
-class CorrectivoSeleccionado(Base):
-    __tablename__ = "correctivo_seleccionado"
+class ObraSeleccionada(Base):
+    __tablename__ = "obra_seleccionada"
     id = Column(Integer, primary_key=True)
     id_cuadrilla = Column(Integer, ForeignKey("cuadrilla.id"))
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_correctivo.id"))
+    id_obra = Column(Integer, ForeignKey("obra.id"))
     id_sucursal = Column(Integer, ForeignKey("sucursal.id"))
     
-    mantenimiento_correctivo = relationship("MantenimientoCorrectivo", back_populates="correctivo_seleccionado")
-    cuadrilla = relationship("Cuadrilla", back_populates="correctivo_seleccionado")
-    sucursal = relationship("Sucursal", back_populates="correctivo_seleccionado")
-    
-class PreventivoSeleccionado(Base):
-    __tablename__ = "preventivo_seleccionado"
-    id = Column(Integer, primary_key=True)
-    id_cuadrilla = Column(Integer, ForeignKey("cuadrilla.id"))
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
-    id_sucursal = Column(Integer, ForeignKey("sucursal.id"))
-    
-    mantenimiento_preventivo = relationship("MantenimientoPreventivo", back_populates="preventivo_seleccionado")
-    cuadrilla = relationship("Cuadrilla", back_populates="preventivo_seleccionado")
-    sucursal = relationship("Sucursal", back_populates="preventivo_seleccionado")
+    obra = relationship("Obra", back_populates="asignaciones")
+    cuadrilla = relationship("Cuadrilla", back_populates="asignaciones")
+    sucursal = relationship("Sucursal", back_populates="asignaciones")
 
 class PushSubscription(Base):
     __tablename__ = "push_subscription"
@@ -153,48 +148,29 @@ class PushSubscription(Base):
     device_info = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     
-class Notificacion_Correctivo(Base):
-    __tablename__ = "notificacion_correctivo"
+class Notificacion(Base):
+    __tablename__ = "notificacion"
 
     id = Column(Integer, primary_key=True)
     firebase_uid = Column(String, nullable=False)
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_correctivo.id"))
+    id_obra = Column(Integer, ForeignKey("obra.id"))
     mensaje = Column(String, nullable=False)
     leida = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
     
-    mantenimiento_correctivo = relationship("MantenimientoCorrectivo", back_populates="notificacion_correctivo")
+    obra = relationship("Obra", back_populates="notificaciones")
 
-class Notificacion_Preventivo(Base):
-    __tablename__ = "notificacion_preventivo"
-
-    id = Column(Integer, primary_key=True)
-    firebase_uid = Column(String, nullable=False)
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
-    mensaje = Column(String, nullable=False)
-    leida = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
-    
-    mantenimiento_preventivo = relationship("MantenimientoPreventivo", back_populates="notificacion_preventivo")
-class MensajeCorrectivo(Base):
-    __tablename__ = "mensaje_correctivo"
+class Mensaje(Base):
+    __tablename__ = "mensaje"
     id = Column(Integer, primary_key=True)
     firebase_uid = Column(String)
     nombre_usuario = Column(String)
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_correctivo.id"))
+    id_obra = Column(Integer, ForeignKey("obra.id"))
     texto = Column(String, nullable=True)
     archivo = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
-    
-class MensajePreventivo(Base):
-    __tablename__ = "mensaje_preventivo"
-    id = Column(Integer, primary_key=True)
-    firebase_uid = Column(String)
-    nombre_usuario = Column(String)
-    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
-    texto = Column(String, nullable=True)
-    archivo = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
+
+    obra = relationship("Obra", back_populates="mensajes")
 
 class ColumnPreference(Base):
     __tablename__ = "column_preference"
@@ -215,6 +191,8 @@ class Material(Base):
     stock_actual = Column(Numeric(10,2), default=0)
     stock_minimo = Column(Numeric(10,2), default=0)
 
+    movimientos = relationship("MovimientoStock", back_populates="material")
+
 class MovimientoStock(Base):
     __tablename__ = "movimientos_stock"
 
@@ -222,6 +200,8 @@ class MovimientoStock(Base):
     material_id = Column(Integer, ForeignKey("materiales.id"), nullable=False)
     tipo_movimiento = Column(String(20), nullable=False)
     cantidad = Column(Numeric(10,2), nullable=False)
-    obra_id = Column(Integer, ForeignKey("obras.id"), nullable=True)
-    tipo_obra = Column(String(20), nullable=True)
+    obra_id = Column(Integer, ForeignKey("obra.id"), nullable=True)
     fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
+
+    obra = relationship("Obra", back_populates="movimientos_stock")
+    material = relationship("Material", back_populates="movimientos")

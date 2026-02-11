@@ -82,14 +82,14 @@ def _blob_exists(path: str) -> bool:
     bucket = storage_client.bucket(GOOGLE_CLOUD_BUCKET_NAME)
     return bucket.blob(path).exists()
 
-def get_fotos_gallery_url(mantenimiento_id, tipo):
-    blob_path = f"mantenimientos_{tipo}/{mantenimiento_id}/fotos/index.html"
+def get_fotos_gallery_url(obra_id):
+    blob_path = f"fotos/{obra_id}/fotos/index.html"
     if not _blob_exists(blob_path):
         return None
     return f"https://storage.googleapis.com/{GOOGLE_CLOUD_BUCKET_NAME}/{blob_path}"
 
-def get_planillas_gallery_url(mantenimiento_id):
-    blob_path = f"mantenimientos_preventivos/{mantenimiento_id}/planillas/index.html"
+def get_planillas_gallery_url(obra_id):
+    blob_path = f"planillas/{obra_id}/planillas/index.html"
     if not _blob_exists(blob_path):
         return None
     return f"https://storage.googleapis.com/{GOOGLE_CLOUD_BUCKET_NAME}/{blob_path}"

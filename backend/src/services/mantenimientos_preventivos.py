@@ -9,14 +9,15 @@ from sqlalchemy.orm import Session
 from api.models import (
     Cliente,
     Cuadrilla,
+    Obra,
     MantenimientoPreventivo,
-    MantenimientoPreventivoFoto,
+    FotoObra,
     MantenimientoPreventivoPlanilla,
     Sucursal,
 )
 from services.gcloud_storage import delete_file_in_folder, upload_file_to_gcloud
 from services.google_sheets import append_preventivo, delete_preventivo, update_preventivo
-from services.notificaciones import notify_users_preventivo
+from services.notificaciones import notify_users
 
 GOOGLE_CLOUD_BUCKET_NAME = os.getenv("GOOGLE_CLOUD_BUCKET_NAME")
 FRECUENCIA_PERIODOS = {
@@ -142,7 +143,12 @@ async def create_mantenimiento_preventivo(
     _ensure_preventivo_period(db, sucursal.id, fecha_apertura, sucursal_frecuencia)
     cuadrilla = _get_cuadrilla(db, id_cuadrilla)
 
+    obra = Obra(tipo="preventivo")
+    db.add(obra)
+    db.flush()
+
     db_mantenimiento = MantenimientoPreventivo(
+        obra_id=obra.id,
         cliente_id=cliente_id,
         sucursal_id=sucursal_id,
         frecuencia=sucursal_frecuencia,
@@ -154,9 +160,9 @@ async def create_mantenimiento_preventivo(
     db.commit()
     db.refresh(db_mantenimiento)
     append_preventivo(db_mantenimiento)
-    await notify_users_preventivo(
+    await notify_users(
         db_session=db,
-        id_mantenimiento=db_mantenimiento.id,
+        id_obra=db_mantenimiento.obra_id,
         mensaje=f"Nuevo preventivo asignado - Sucursal: {sucursal.nombre}",
         firebase_uid=cuadrilla.firebase_uid,
     )
@@ -184,7 +190,7 @@ async def update_mantenimiento_preventivo(
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Google Cloud Bucket name not configured")
-    base_folder = f"mantenimientos_preventivos/{mantenimiento_id}"
+    base_folder = f"obras/{db_mantenimiento.obra_id}"
 
     final_cliente_id = cliente_id if cliente_id is not None else db_mantenimiento.cliente_id
     final_sucursal_id = sucursal_id if sucursal_id is not None else db_mantenimiento.sucursal_id
@@ -228,30 +234,30 @@ async def update_mantenimiento_preventivo(
             db_mantenimiento.fecha_cierre = None
         else:
             db_mantenimiento.fecha_cierre = fecha_cierre
-            await notify_users_preventivo(
+            await notify_users(
                 db_session=db,
-                id_mantenimiento=db_mantenimiento.id,
+                id_obra=db_mantenimiento.obra_id,
                 mensaje=f"Preventivo Solucionado - Sucursal: {sucursal.nombre}",
                 firebase_uid=None,
             )
 
     if planillas is not None:
         for planilla in planillas:
-            url = await upload_file_to_gcloud(planilla, bucket_name, f"{base_folder}/planillas")
+            url = await upload_file_to_gcloud(planilla, bucket_name, f"{base_folder}/planilla")
             new_planilla = MantenimientoPreventivoPlanilla(mantenimiento_id=mantenimiento_id, url=url)
             db.add(new_planilla)
 
     if fotos is not None:
         for foto in fotos:
             url = await upload_file_to_gcloud(foto, bucket_name, f"{base_folder}/fotos")
-            new_foto = MantenimientoPreventivoFoto(mantenimiento_id=mantenimiento_id, url=url)
+            new_foto = FotoObra(obra_id=db_mantenimiento.obra_id, url=url)
             db.add(new_foto)
 
     if extendido is not None:
         db_mantenimiento.extendido = extendido
-        await notify_users_preventivo(
+        await notify_users(
             db_session=db,
-            id_mantenimiento=mantenimiento_id,
+            id_obra=db_mantenimiento.obra_id,
             mensaje=f"Extendido solicitado - Sucursal: {sucursal.nombre} | Cuadrilla: {cuadrilla.nombre}",
             firebase_uid=None,
         )
@@ -268,51 +274,10 @@ def delete_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_
     _ensure_usuario(current_entity)
 
     db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
+    db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.obra_id).first()
     db.delete(db_mantenimiento)
+    db.delete(db_obra)
     db.commit()
     delete_preventivo(mantenimiento_id)
+
     return {"message": f"Mantenimiento preventivo con id {mantenimiento_id} eliminado"}
-
-def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_entity(current_entity)
-
-    db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
-
-    planilla = (
-        db.query(MantenimientoPreventivoPlanilla)
-        .filter(
-            MantenimientoPreventivoPlanilla.mantenimiento_id == mantenimiento_id,
-            MantenimientoPreventivoPlanilla.url.endswith(file_name),
-        )
-        .first()
-    )
-    if not planilla:
-        raise HTTPException(status_code=404, detail="Planilla no encontrada")
-
-    delete_file_in_folder(GOOGLE_CLOUD_BUCKET_NAME, f"mantenimientos_preventivos/{mantenimiento_id}/planillas/", file_name)
-    db.delete(planilla)
-    db.commit()
-    update_preventivo(db_mantenimiento)
-    return True
-
-def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_entity(current_entity)
-
-    db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
-
-    foto = (
-        db.query(MantenimientoPreventivoFoto)
-        .filter(
-            MantenimientoPreventivoFoto.mantenimiento_id == mantenimiento_id,
-            MantenimientoPreventivoFoto.url.endswith(file_name),
-        )
-        .first()
-    )
-    if not foto:
-        raise HTTPException(status_code=404, detail="Foto no encontrada")
-
-    delete_file_in_folder(GOOGLE_CLOUD_BUCKET_NAME, f"mantenimientos_preventivos/{mantenimiento_id}/fotos/", file_name)
-    db.delete(foto)
-    db.commit()
-    update_preventivo(db_mantenimiento)
-    return True

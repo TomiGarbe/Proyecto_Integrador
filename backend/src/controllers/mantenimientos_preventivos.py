@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, UploadFile, Form
 from sqlalchemy.orm import Session
 from config.database import get_db
-from services.mantenimientos_preventivos import get_mantenimientos_preventivos, get_mantenimiento_preventivo, create_mantenimiento_preventivo, update_mantenimiento_preventivo, delete_mantenimiento_preventivo, delete_mantenimiento_planilla, delete_mantenimiento_photo
+from services.mantenimientos_preventivos import get_mantenimientos_preventivos, get_mantenimiento_preventivo, create_mantenimiento_preventivo, update_mantenimiento_preventivo, delete_mantenimiento_preventivo
 from api.schemas import MantenimientoPreventivoCreate
 from typing import List, Optional
 from datetime import date, datetime
@@ -15,6 +15,7 @@ def mantenimientos_preventivos_get(request: Request, db: Session = Depends(get_d
     return [
         {
             "id": m.id,
+            "obra_id": m.obra_id,
             "cliente_id": m.cliente_id,
             "sucursal_id": m.sucursal_id,
             "frecuencia": m.frecuencia,
@@ -35,6 +36,7 @@ def mantenimiento_preventivo_get(mantenimiento_id: int, request: Request, db: Se
     mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id, current_entity)
     return {
         "id": mantenimiento.id,
+        "obra_id": mantenimiento.obra_id,
         "cliente_id": mantenimiento.cliente_id,
         "sucursal_id": mantenimiento.sucursal_id,
         "frecuencia": mantenimiento.frecuencia,
@@ -62,6 +64,7 @@ async def mantenimiento_preventivo_create(mantenimiento: MantenimientoPreventivo
     )
     return {
         "id": new_mantenimiento.id,
+        "obra_id": new_mantenimiento.obra_id,
         "cliente_id": new_mantenimiento.cliente_id,
         "sucursal_id": new_mantenimiento.sucursal_id,
         "frecuencia": new_mantenimiento.frecuencia,
@@ -104,6 +107,7 @@ async def mantenimiento_preventivo_update(
     )
     return {
         "id": updated_mantenimiento.id,
+        "obra_id": updated_mantenimiento.obra_id,
         "cliente_id": updated_mantenimiento.cliente_id,
         "sucursal_id": updated_mantenimiento.sucursal_id,
         "frecuencia": updated_mantenimiento.frecuencia,
@@ -120,15 +124,3 @@ async def mantenimiento_preventivo_update(
 def mantenimiento_preventivo_delete(mantenimiento_id: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
     return delete_mantenimiento_preventivo(db, mantenimiento_id, current_entity)
-
-@router.delete("/{mantenimiento_id}/planillas/{file_name}", response_model=dict)
-def mantenimiento_planillas_delete(mantenimiento_id: int, file_name: str, request: Request, db: Session = Depends(get_db)):
-    current_entity = request.state.current_entity
-    delete_mantenimiento_planilla(db, mantenimiento_id, file_name, current_entity)
-    return {"message": "Planilla eliminada correctamente"}
-
-@router.delete("/{mantenimiento_id}/fotos/{file_name}", response_model=dict)
-def mantenimiento_photo_delete(mantenimiento_id: int, file_name: str, request: Request, db: Session = Depends(get_db)):
-    current_entity = request.state.current_entity
-    delete_mantenimiento_photo(db, mantenimiento_id, file_name, current_entity)
-    return {"message": "Foto eliminada correctamente"}

@@ -1,6 +1,6 @@
 from fastapi import HTTPException   
 from sqlalchemy.orm import Session
-from api.models import CorrectivoSeleccionado, PreventivoSeleccionado
+from api.models import ObraSeleccionada
 from pydantic import BaseModel
 from typing import List
 from firebase_admin import db
@@ -76,21 +76,13 @@ async def get_users_locations(current_entity: dict) -> List[Usuarios]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching users: {str(e)}")
     
-def get_correctivos(db_session: Session, id_cuadrilla: int, current_entity: dict):
+def get_selection(db_session: Session, id_cuadrilla: int, current_entity: dict):
     _ensure_entity(current_entity)
 
-    correctivos = db_session.query(CorrectivoSeleccionado).filter(CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
-    if not correctivos:
+    obras = db_session.query(ObraSeleccionada).filter(ObraSeleccionada.id_cuadrilla == id_cuadrilla).all()
+    if not obras:
         return []
-    return correctivos
-
-def get_preventivos(db_session: Session, id_cuadrilla: int, current_entity: dict):
-    _ensure_entity(current_entity)
-
-    preventivos = db_session.query(PreventivoSeleccionado).filter(PreventivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
-    if not preventivos:
-        return []
-    return preventivos
+    return obras
 
 async def update_user_location(current_entity: dict, firebase_uid: str, user_id: str, tipo: str, name: str, lat: float, lng: float):
     _ensure_entity(current_entity)
@@ -109,110 +101,62 @@ async def update_user_location(current_entity: dict, firebase_uid: str, user_id:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando ubicación: {str(e)}")
 
-def update_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, id_sucursal: int, current_entity: dict):
+def update_selection(db_session: Session, id_cuadrilla: int, id_obra: int, id_sucursal: int, current_entity: dict):
     _ensure_entity(current_entity)
     
-    existing_correctivo = db_session.query(CorrectivoSeleccionado).filter(
-        CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        CorrectivoSeleccionado.id_mantenimiento == id_mantenimiento
+    existing_obra = db_session.query(ObraSeleccionada).filter(
+        ObraSeleccionada.id_cuadrilla == id_cuadrilla,
+        ObraSeleccionada.id_obra == id_obra
     ).first()
 
-    if existing_correctivo:
-        raise HTTPException(status_code=400, detail="El correctivo ya fue seleccionado anteriormente")
+    if existing_obra:
+        raise HTTPException(status_code=400, detail="La obra ya fue seleccionada anteriormente")
     
     try:
-        db_correctivo = CorrectivoSeleccionado(id_cuadrilla=id_cuadrilla, id_mantenimiento=id_mantenimiento, id_sucursal=id_sucursal)
-        db_session.add(db_correctivo)
+        db_obra = ObraSeleccionada(id_cuadrilla=id_cuadrilla, id_obra=id_obra, id_sucursal=id_sucursal)
+        db_session.add(db_obra)
         db_session.commit()
-        db_session.refresh(db_correctivo)
-        return db_correctivo
+        db_session.refresh(db_obra)
+        return db_obra
     except Exception as e:
         db_session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al guardar correctivo: {str(e)}")
-
-def update_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, id_sucursal: int, current_entity: dict):
-    _ensure_entity(current_entity)
-    
-    existing_preventivo = db_session.query(PreventivoSeleccionado).filter(
-        PreventivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        PreventivoSeleccionado.id_mantenimiento == id_mantenimiento
-    ).first()
-    
-    if existing_preventivo:
-        raise HTTPException(status_code=400, detail="El preventivo ya fue seleccionado anteriormente")
-    
-    try:
-        db_preventivo = PreventivoSeleccionado(id_cuadrilla=id_cuadrilla, id_mantenimiento=id_mantenimiento, id_sucursal=id_sucursal)
-        db_session.add(db_preventivo)
-        db_session.commit()
-        db_session.refresh(db_preventivo)
-        return db_preventivo
-    except Exception as e:
-        db_session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error al guardar preventivo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al guardar obra: {str(e)}")
     
 def delete_sucursal(db_session: Session, id_cuadrilla: int, id_sucursal: int, current_entity: dict):
     _ensure_entity(current_entity)
     
-    correctivos = db_session.query(CorrectivoSeleccionado).filter(
-        CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        CorrectivoSeleccionado.id_sucursal == id_sucursal
+    obras = db_session.query(ObraSeleccionada).filter(
+        ObraSeleccionada.id_cuadrilla == id_cuadrilla,
+        ObraSeleccionada.id_sucursal == id_sucursal
     ).all()
-    if correctivos:
-        for correctivo in correctivos:
-            db_session.delete(correctivo)
-        
-    preventivos = db_session.query(PreventivoSeleccionado).filter(
-        PreventivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        PreventivoSeleccionado.id_sucursal == id_sucursal
-    ).all()
-    if preventivos:
-        for preventivo in preventivos:
-            db_session.delete(preventivo)
+    if obras:
+        for obra in obras:
+            db_session.delete(obra)
 
     db_session.commit()
     return {"message": "Seleccion de sucursal eliminada"}
 
-def delete_correctivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, current_entity: dict):
+def delete_obra(db_session: Session, id_cuadrilla: int, id_obra: int, current_entity: dict):
     _ensure_entity(current_entity)
     
-    correctivo = db_session.query(CorrectivoSeleccionado).filter(
-        CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        CorrectivoSeleccionado.id_mantenimiento == id_mantenimiento
+    obra = db_session.query(ObraSeleccionada).filter(
+        ObraSeleccionada.id_cuadrilla == id_cuadrilla,
+        ObraSeleccionada.id_obra == id_obra
     ).first()
-    if not correctivo:
-        raise HTTPException(status_code=404, detail="Correctivo no encontrado")
+    if not obra:
+        raise HTTPException(status_code=404, detail="Obra no encontrada")
         
-    db_session.delete(correctivo)
+    db_session.delete(obra)
     db_session.commit()
-    return {"message": "Seleccion de correctivo eliminada"}
-
-def delete_preventivo(db_session: Session, id_cuadrilla: int, id_mantenimiento: int, current_entity: dict):
-    _ensure_entity(current_entity)
-        
-    preventivo = db_session.query(PreventivoSeleccionado).filter(
-        PreventivoSeleccionado.id_cuadrilla == id_cuadrilla,
-        PreventivoSeleccionado.id_mantenimiento == id_mantenimiento
-    ).first()
-    if not preventivo:
-        raise HTTPException(status_code=404, detail="Preventivo no encontrado")
-
-    db_session.delete(preventivo)
-    db_session.commit()
-    return {"message": "Seleccion de preventivo eliminada"}
+    return {"message": "Seleccion de obra eliminada"}
 
 def delete_selection(db_session: Session, id_cuadrilla: int, current_entity: dict):
     _ensure_entity(current_entity)
-    
-    correctivos = db_session.query(CorrectivoSeleccionado).filter(CorrectivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
-    if correctivos:
-        for correctivo in correctivos:
-            db_session.delete(correctivo)
         
-    preventivos = db_session.query(PreventivoSeleccionado).filter(PreventivoSeleccionado.id_cuadrilla == id_cuadrilla).all()
-    if preventivos:
-        for preventivo in preventivos:
-            db_session.delete(preventivo)
+    obras = db_session.query(ObraSeleccionada).filter(ObraSeleccionada.id_cuadrilla == id_cuadrilla).all()
+    if obras:
+        for obra in obras:
+            db_session.delete(obra)
 
     db_session.commit()
     return {"message": "Seleccion eliminada"}

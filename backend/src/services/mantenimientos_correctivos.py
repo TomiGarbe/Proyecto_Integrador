@@ -5,10 +5,10 @@ import os
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from api.models import Cliente, Cuadrilla, MantenimientoCorrectivo, MantenimientoCorrectivoFoto, Sucursal
+from api.models import Cliente, Cuadrilla, Obra, MantenimientoCorrectivo, FotoObra, Sucursal
 from services.gcloud_storage import delete_file_in_folder, upload_file_to_gcloud
 from services.google_sheets import append_correctivo, delete_correctivo, update_correctivo
-from services.notificaciones import notify_user, notify_users_correctivo
+from services.notificaciones import notify_user, notify_users
 
 GOOGLE_CLOUD_BUCKET_NAME = os.getenv("GOOGLE_CLOUD_BUCKET_NAME")
 
@@ -76,7 +76,12 @@ async def create_mantenimiento_correctivo(
 
     cuadrilla = _get_cuadrilla(db, id_cuadrilla) if id_cuadrilla else None
 
+    obra = Obra(tipo="correctivo")
+    db.add(obra)
+    db.flush()
+
     db_mantenimiento = MantenimientoCorrectivo(
+        obra_id=obra.id,
         cliente_id=cliente_id,
         sucursal_id=sucursal_id,
         id_cuadrilla=id_cuadrilla,
@@ -96,14 +101,14 @@ async def create_mantenimiento_correctivo(
             notify_user(
                 db_session=db,
                 firebase_uid=cuadrilla.firebase_uid,
-                id_mantenimiento=db_mantenimiento.id,
+                id_obra=db_mantenimiento.obra_id,
                 mensaje=f"Nuevo correctivo asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
                 title="Nuevo correctivo urgente asignado",
                 body=f"Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente}",
             )
-        await notify_users_correctivo(
+        await notify_users(
             db_session=db,
-            id_mantenimiento=db_mantenimiento.id,
+            id_obra=db_mantenimiento.obra_id,
             mensaje=f"Nuevo correctivo asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
             firebase_uid=cuadrilla.firebase_uid,
         )
@@ -134,7 +139,7 @@ async def update_mantenimiento_correctivo(
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Google Cloud Bucket name not configured")
-    base_folder = f"mantenimientos_correctivos/{mantenimiento_id}"
+    base_folder = f"obras/{db_mantenimiento.obra_id}"
 
     final_cliente_id = cliente_id if cliente_id is not None else db_mantenimiento.cliente_id
     final_sucursal_id = sucursal_id if sucursal_id is not None else db_mantenimiento.sucursal_id
@@ -167,7 +172,7 @@ async def update_mantenimiento_correctivo(
     if fotos is not None:
         for foto in fotos:
             url = await upload_file_to_gcloud(foto, bucket_name, f"{base_folder}/fotos")
-            new_foto = MantenimientoCorrectivoFoto(mantenimiento_id=mantenimiento_id, url=url)
+            new_foto = FotoObra(obra_id=db_mantenimiento.obra_id, url=url)
             db.add(new_foto)
 
     if fecha_cierre is not None:
@@ -181,9 +186,9 @@ async def update_mantenimiento_correctivo(
         if estado not in ("Solucionado", "Finalizado"):
             db_mantenimiento.fecha_cierre = None
         if estado == "Solucionado":
-            await notify_users_correctivo(
+            await notify_users(
                 db_session=db,
-                id_mantenimiento=mantenimiento_id,
+                id_obra=db_mantenimiento.obra_id,
                 mensaje=f"Correctivo Solucionado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente}",
                 firebase_uid=None,
             )
@@ -196,9 +201,9 @@ async def update_mantenimiento_correctivo(
     if extendido is not None:
         db_mantenimiento.extendido = extendido
         if cuadrilla:
-            await notify_users_correctivo(
+            await notify_users(
                 db_session=db,
-                id_mantenimiento=mantenimiento_id,
+                id_obra=db_mantenimiento.obra_id,
                 mensaje=f"Extendido solicitado - Sucursal: {sucursal.nombre} | Cuadrilla: {cuadrilla.nombre}",
                 firebase_uid=None,
             )
@@ -211,14 +216,14 @@ async def update_mantenimiento_correctivo(
         notify_user(
             db_session=db,
             firebase_uid=cuadrilla.firebase_uid,
-            id_mantenimiento=db_mantenimiento.id,
+            id_obra=db_mantenimiento.obra_id,
             mensaje=f"Correctivo urgente asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
             title="Correctivo urgente asignado",
             body=f"Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente}",
         )
-        await notify_users_correctivo(
+        await notify_users(
             db_session=db,
-            id_mantenimiento=db_mantenimiento.id,
+            id_obra=db_mantenimiento.obra_id,
             mensaje=f"Correctivo urgente asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
             firebase_uid=cuadrilla.firebase_uid,
         )
@@ -228,42 +233,9 @@ async def update_mantenimiento_correctivo(
 def delete_mantenimiento_correctivo(db: Session, mantenimiento_id: int, current_entity: dict):
     _ensure_usuario(current_entity)
     db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
+    db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.obra_id).first()
     db.delete(db_mantenimiento)
+    db.delete(db_obra)
     db.commit()
     delete_correctivo(mantenimiento_id)
     return {"message": f"Mantenimiento correctivo con id {mantenimiento_id} eliminado"}
-
-def delete_mantenimiento_planilla(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_entity(current_entity)
-
-    db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
-    delete_file_in_folder(GOOGLE_CLOUD_BUCKET_NAME, f"mantenimientos_correctivos/{mantenimiento_id}/planilla/", file_name)
-
-    db_mantenimiento.planilla = None
-
-    db.commit()
-    db.refresh(db_mantenimiento)
-    update_correctivo(db_mantenimiento)
-    return True
-
-def delete_mantenimiento_photo(db: Session, mantenimiento_id: int, file_name: str, current_entity: dict) -> bool:
-    _ensure_entity(current_entity)
-
-    db_mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id)
-
-    foto = (
-        db.query(MantenimientoCorrectivoFoto)
-        .filter(
-            MantenimientoCorrectivoFoto.mantenimiento_id == mantenimiento_id,
-            MantenimientoCorrectivoFoto.url.endswith(file_name),
-        )
-        .first()
-    )
-    if not foto:
-        raise HTTPException(status_code=404, detail="Foto no encontrada")
-
-    delete_file_in_folder(GOOGLE_CLOUD_BUCKET_NAME, f"mantenimientos_correctivos/{mantenimiento_id}/fotos/", file_name)
-    db.delete(foto)
-    db.commit()
-    update_correctivo(db_mantenimiento)
-    return True

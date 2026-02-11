@@ -11,9 +11,8 @@ Sistema de gestión de cuadrillas para obras de mantenimiento.
 ## Instalación
 1. Clona el repositorio: git clone <url>
 2. Configura las variables de entorno en Backend/src/env.config y Frontend/.env
-3. Docker: docker-compose up -d
-4. Backend: cd backend && pip install -r requirements.txt && cd src && uvicorn main:app --host 0.0.0.0 --port 8000
-5. Frontend: cd frontend && npm install && npm run dev
+3. Backend: cd backend && py -m pip install -r requirements.txt && cd src && py -m uvicorn main:app --host 0.0.0.0 --port 8000
+4. Frontend: cd frontend && npm install && npm run dev
 
 ## Tests con code coverage
 1. Backend: cd backend && pytest -v --cov=src --cov-report=xml --junitxml=pytest-report.xml
