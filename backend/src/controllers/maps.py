@@ -42,16 +42,16 @@ async def location_update(request: Request, location: LocationUpdate, db_session
     if os.environ.get("E2E_TESTING") == "true":
         cuadrilla = db_session.query(Cuadrilla).filter(Cuadrilla.nombre == "Cuadrilla E2E").first()
         firebase_uid = cuadrilla.firebase_uid
-        user_id = str(cuadrilla.id)
+        id_user = str(cuadrilla.id)
         tipo = "cuadrilla"
     else:
         firebase_uid = str(current_entity["data"]["uid"])
-        user_id = str(current_entity["data"]["id"])
+        id_user = str(current_entity["data"]["id"])
         if current_entity["type"] == "usuario":
             tipo = str(current_entity["data"]["rol"])
         else:
             tipo = str(current_entity["type"])
-    return await update_user_location(current_entity, firebase_uid, user_id, tipo, location.name, location.lat, location.lng)
+    return await update_user_location(current_entity, firebase_uid, id_user, tipo, location.name, location.lat, location.lng)
 
 @router.post("/select-obra", response_model=dict)
 def selection_update(request: Request, s: Seleccion, db_session: Session = Depends(get_db)):

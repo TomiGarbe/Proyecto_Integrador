@@ -71,12 +71,12 @@ const PlanillaSection = ({
       if (multiple) {
         for (const planillaUrl of selected) {
           const fileName = planillaUrl.split('/').pop();
-          await deletePlanilla(mantenimiento.id, fileName);
+          await deletePlanilla(mantenimiento.id_obra, fileName);
         }
         setSelected([]);
       } else if (selected) {
         const fileName = selected.split('/').pop();
-        await deletePlanilla(mantenimiento.id, fileName);
+        await deletePlanilla(mantenimiento.id_obra, fileName);
         setSelected(null);
       }
       setSuccess('Planilla(s) eliminada(s) correctamente.');

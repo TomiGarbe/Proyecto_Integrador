@@ -28,7 +28,7 @@ const MantenimientoInfo = ({
     <h4 className="info-section-title">{title}</h4>
     <div className="info-field">
       <strong className="info-label">Cliente:</strong>{' '}
-      {mantenimiento.cliente_id ? getClienteNombre(mantenimiento.cliente_id) : 'N/A'}
+      {mantenimiento.id_cliente ? getClienteNombre(mantenimiento.id_cliente) : 'N/A'}
     </div>
     <div className="info-field">
       <strong className="info-label">

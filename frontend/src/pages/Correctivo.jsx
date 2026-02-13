@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Container, Row, Col, Button, Modal } from 'react-bootstrap';
-import { deleteMantenimientoPlanilla } from '../services/mantenimientoCorrectivoService';
+import { deletePlanilla } from '../services/obras';
 import { FiArrowLeft, FiMessageSquare } from "react-icons/fi";
 import BackButton from '../components/BackButton';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -111,7 +111,7 @@ const Correctivo = () => {
               formData={formData}
               setFormData={setFormData}
               handleSubmit={handleSubmit}
-              deletePlanilla={deleteMantenimientoPlanilla}
+              deletePlanilla={deletePlanilla}
               handleImageClick={handleImageClick}
               fetchMantenimiento={fetchMantenimiento}
               setIsLoading={setIsLoading}

@@ -37,26 +37,26 @@ def _ensure_entity(current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
 
-def _get_cliente(db: Session, cliente_id: int) -> Cliente:
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+def _get_cliente(db: Session, id_cliente: int) -> Cliente:
+    cliente = db.query(Cliente).filter(Cliente.id == id_cliente).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
 
-def _get_sucursal(db: Session, sucursal_id: int) -> Sucursal:
-    sucursal = db.query(Sucursal).filter(Sucursal.id == sucursal_id).first()
+def _get_sucursal(db: Session, id_sucursal: int) -> Sucursal:
+    sucursal = db.query(Sucursal).filter(Sucursal.id == id_sucursal).first()
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return sucursal
 
-def _get_cuadrilla(db: Session, cuadrilla_id: int) -> Cuadrilla:
-    cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
+def _get_cuadrilla(db: Session, id_cuadrilla: int) -> Cuadrilla:
+    cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == id_cuadrilla).first()
     if not cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
     return cuadrilla
 
-def _ensure_cliente_sucursal(cliente_id: int, sucursal: Sucursal):
-    if sucursal.cliente_id != cliente_id:
+def _ensure_cliente_sucursal(id_cliente: int, sucursal: Sucursal):
+    if sucursal.id_cliente != id_cliente:
         raise HTTPException(status_code=400, detail="La sucursal no pertenece al cliente seleccionado")
 
 def _normalize_frecuencia(frecuencia: str) -> str:
@@ -83,14 +83,14 @@ def _calculate_period_range(fecha: date, frecuencia: str) -> Tuple[date, date]:
 
 def _ensure_preventivo_period(
     db: Session,
-    sucursal_id: int,
+    id_sucursal: int,
     fecha: date,
     frecuencia: str,
     exclude_id: Optional[int] = None,
 ):
     inicio, fin = _calculate_period_range(fecha, frecuencia)
     query = db.query(MantenimientoPreventivo).filter(
-        MantenimientoPreventivo.sucursal_id == sucursal_id,
+        MantenimientoPreventivo.id_sucursal == id_sucursal,
         MantenimientoPreventivo.fecha_apertura >= inicio,
         MantenimientoPreventivo.fecha_apertura <= fin,
     )
@@ -107,17 +107,17 @@ def get_mantenimientos_preventivos(db: Session, current_entity: dict):
     _ensure_usuario(current_entity)
     return db.query(MantenimientoPreventivo).all()
 
-def get_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_entity: dict):
+def get_mantenimiento_preventivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_usuario(current_entity)
-    mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == mantenimiento_id).first()
+    mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == id_mantenimiento).first()
     if not mantenimiento:
         raise HTTPException(status_code=404, detail="Mantenimiento preventivo no encontrado")
     return mantenimiento
 
 async def create_mantenimiento_preventivo(
     db: Session,
-    cliente_id: int,
-    sucursal_id: int,
+    id_cliente: int,
+    id_sucursal: int,
     frecuencia: str,
     id_cuadrilla: int,
     fecha_apertura: date,
@@ -126,8 +126,8 @@ async def create_mantenimiento_preventivo(
 ):
     _ensure_usuario(current_entity)
 
-    cliente = _get_cliente(db, cliente_id)
-    sucursal = _get_sucursal(db, sucursal_id)
+    cliente = _get_cliente(db, id_cliente)
+    sucursal = _get_sucursal(db, id_sucursal)
     _ensure_cliente_sucursal(cliente.id, sucursal)
 
     if not sucursal.frecuencia_preventivo:
@@ -148,9 +148,9 @@ async def create_mantenimiento_preventivo(
     db.flush()
 
     db_mantenimiento = MantenimientoPreventivo(
-        obra_id=obra.id,
-        cliente_id=cliente_id,
-        sucursal_id=sucursal_id,
+        id_obra=obra.id,
+        id_cliente=id_cliente,
+        id_sucursal=id_sucursal,
         frecuencia=sucursal_frecuencia,
         id_cuadrilla=id_cuadrilla,
         fecha_apertura=fecha_apertura,
@@ -162,7 +162,7 @@ async def create_mantenimiento_preventivo(
     append_preventivo(db_mantenimiento)
     await notify_users(
         db_session=db,
-        id_obra=db_mantenimiento.obra_id,
+        id_obra=db_mantenimiento.id_obra,
         mensaje=f"Nuevo preventivo asignado - Sucursal: {sucursal.nombre}",
         firebase_uid=cuadrilla.firebase_uid,
     )
@@ -170,10 +170,10 @@ async def create_mantenimiento_preventivo(
 
 async def update_mantenimiento_preventivo(
     db: Session,
-    mantenimiento_id: int,
+    id_mantenimiento: int,
     current_entity: dict,
-    cliente_id: Optional[int] = None,
-    sucursal_id: Optional[int] = None,
+    id_cliente: Optional[int] = None,
+    id_sucursal: Optional[int] = None,
     frecuencia: Optional[str] = None,
     id_cuadrilla: Optional[int] = None,
     fecha_apertura: Optional[date] = None,
@@ -185,18 +185,18 @@ async def update_mantenimiento_preventivo(
 ):
     _ensure_entity(current_entity)
 
-    db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
+    db_mantenimiento = get_mantenimiento_preventivo(db, id_mantenimiento)
 
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Google Cloud Bucket name not configured")
-    base_folder = f"obras/{db_mantenimiento.obra_id}"
+    base_folder = f"obras/{db_mantenimiento.id_obra}"
 
-    final_cliente_id = cliente_id if cliente_id is not None else db_mantenimiento.cliente_id
-    final_sucursal_id = sucursal_id if sucursal_id is not None else db_mantenimiento.sucursal_id
+    final_id_cliente = id_cliente if id_cliente is not None else db_mantenimiento.id_cliente
+    final_id_sucursal = id_sucursal if id_sucursal is not None else db_mantenimiento.id_sucursal
 
-    cliente = _get_cliente(db, final_cliente_id)
-    sucursal = _get_sucursal(db, final_sucursal_id)
+    cliente = _get_cliente(db, final_id_cliente)
+    sucursal = _get_sucursal(db, final_id_sucursal)
     _ensure_cliente_sucursal(cliente.id, sucursal)
 
     if not sucursal.frecuencia_preventivo:
@@ -217,8 +217,8 @@ async def update_mantenimiento_preventivo(
         exclude_id=db_mantenimiento.id,
     )
 
-    db_mantenimiento.cliente_id = cliente.id
-    db_mantenimiento.sucursal_id = sucursal.id
+    db_mantenimiento.id_cliente = cliente.id
+    db_mantenimiento.id_sucursal = sucursal.id
     db_mantenimiento.frecuencia = sucursal.frecuencia_preventivo
 
     if fecha_apertura is not None:
@@ -236,7 +236,7 @@ async def update_mantenimiento_preventivo(
             db_mantenimiento.fecha_cierre = fecha_cierre
             await notify_users(
                 db_session=db,
-                id_obra=db_mantenimiento.obra_id,
+                id_obra=db_mantenimiento.id_obra,
                 mensaje=f"Preventivo Solucionado - Sucursal: {sucursal.nombre}",
                 firebase_uid=None,
             )
@@ -244,20 +244,20 @@ async def update_mantenimiento_preventivo(
     if planillas is not None:
         for planilla in planillas:
             url = await upload_file_to_gcloud(planilla, bucket_name, f"{base_folder}/planilla")
-            new_planilla = MantenimientoPreventivoPlanilla(mantenimiento_id=mantenimiento_id, url=url)
+            new_planilla = MantenimientoPreventivoPlanilla(id_mantenimiento=id_mantenimiento, url=url)
             db.add(new_planilla)
 
     if fotos is not None:
         for foto in fotos:
             url = await upload_file_to_gcloud(foto, bucket_name, f"{base_folder}/fotos")
-            new_foto = FotoObra(obra_id=db_mantenimiento.obra_id, url=url)
+            new_foto = FotoObra(id_obra=db_mantenimiento.id_obra, url=url)
             db.add(new_foto)
 
     if extendido is not None:
         db_mantenimiento.extendido = extendido
         await notify_users(
             db_session=db,
-            id_obra=db_mantenimiento.obra_id,
+            id_obra=db_mantenimiento.id_obra,
             mensaje=f"Extendido solicitado - Sucursal: {sucursal.nombre} | Cuadrilla: {cuadrilla.nombre}",
             firebase_uid=None,
         )
@@ -270,14 +270,14 @@ async def update_mantenimiento_preventivo(
     update_preventivo(db_mantenimiento)
     return db_mantenimiento
 
-def delete_mantenimiento_preventivo(db: Session, mantenimiento_id: int, current_entity: dict):
+def delete_mantenimiento_preventivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_usuario(current_entity)
 
-    db_mantenimiento = get_mantenimiento_preventivo(db, mantenimiento_id)
-    db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.obra_id).first()
+    db_mantenimiento = get_mantenimiento_preventivo(db, id_mantenimiento)
+    db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.id_obra).first()
     db.delete(db_mantenimiento)
     db.delete(db_obra)
     db.commit()
-    delete_preventivo(mantenimiento_id)
+    delete_preventivo(id_mantenimiento)
 
-    return {"message": f"Mantenimiento preventivo con id {mantenimiento_id} eliminado"}
+    return {"message": f"Mantenimiento preventivo con id {id_mantenimiento} eliminado"}

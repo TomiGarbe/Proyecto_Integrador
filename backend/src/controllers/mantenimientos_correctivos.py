@@ -15,9 +15,9 @@ def mantenimientos_correctivos_get(request: Request, db: Session = Depends(get_d
     return [
         {
             "id": m.id,
-            "obra_id": m.obra_id,
-            "cliente_id": m.cliente_id,
-            "sucursal_id": m.sucursal_id,
+            "id_obra": m.id_obra,
+            "id_cliente": m.id_cliente,
+            "id_sucursal": m.id_sucursal,
             "id_cuadrilla": m.id_cuadrilla,
             "fecha_apertura": m.fecha_apertura,
             "fecha_cierre": m.fecha_cierre,
@@ -33,15 +33,15 @@ def mantenimientos_correctivos_get(request: Request, db: Session = Depends(get_d
         for m in mantenimientos
     ]
 
-@router.get("/{mantenimiento_id}", response_model=dict)
-def mantenimiento_correctivo_get(mantenimiento_id: int, request: Request, db: Session = Depends(get_db)):
+@router.get("/{id_mantenimiento}", response_model=dict)
+def mantenimiento_correctivo_get(id_mantenimiento: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    mantenimiento = get_mantenimiento_correctivo(db, mantenimiento_id, current_entity)
+    mantenimiento = get_mantenimiento_correctivo(db, id_mantenimiento, current_entity)
     return {
         "id": mantenimiento.id,
-        "obra_id": mantenimiento.obra_id,
-        "cliente_id": mantenimiento.cliente_id,
-        "sucursal_id": mantenimiento.sucursal_id,
+        "id_obra": mantenimiento.id_obra,
+        "id_cliente": mantenimiento.id_cliente,
+        "id_sucursal": mantenimiento.id_sucursal,
         "id_cuadrilla": mantenimiento.id_cuadrilla,
         "fecha_apertura": mantenimiento.fecha_apertura,
         "fecha_cierre": mantenimiento.fecha_cierre,
@@ -60,8 +60,8 @@ async def mantenimiento_correctivo_create(mantenimiento: MantenimientoCorrectivo
     current_entity = request.state.current_entity
     new_mantenimiento = await create_mantenimiento_correctivo(
         db,
-        mantenimiento.cliente_id,
-        mantenimiento.sucursal_id,
+        mantenimiento.id_cliente,
+        mantenimiento.id_sucursal,
         mantenimiento.id_cuadrilla,
         mantenimiento.fecha_apertura,
         mantenimiento.numero_caso,
@@ -73,9 +73,9 @@ async def mantenimiento_correctivo_create(mantenimiento: MantenimientoCorrectivo
     )
     return {
         "id": new_mantenimiento.id,
-        "obra_id": new_mantenimiento.obra_id,
-        "cliente_id": new_mantenimiento.cliente_id,
-        "sucursal_id": new_mantenimiento.sucursal_id,
+        "id_obra": new_mantenimiento.id_obra,
+        "id_cliente": new_mantenimiento.id_cliente,
+        "id_sucursal": new_mantenimiento.id_sucursal,
         "id_cuadrilla": new_mantenimiento.id_cuadrilla,
         "fecha_apertura": new_mantenimiento.fecha_apertura,
         "numero_caso": new_mantenimiento.numero_caso,
@@ -85,12 +85,12 @@ async def mantenimiento_correctivo_create(mantenimiento: MantenimientoCorrectivo
         "prioridad": new_mantenimiento.prioridad
     }
 
-@router.put("/{mantenimiento_id}", response_model=dict)
+@router.put("/{id_mantenimiento}", response_model=dict)
 async def mantenimiento_correctivo_update(
-    mantenimiento_id: int,
+    id_mantenimiento: int,
     request: Request,
-    cliente_id: Optional[int] = Form(None),
-    sucursal_id: Optional[int] = Form(None),
+    id_cliente: Optional[int] = Form(None),
+    id_sucursal: Optional[int] = Form(None),
     id_cuadrilla: Optional[int] = Form(None),
     fecha_apertura: Optional[date] = Form(None),
     fecha_cierre: Optional[date] = Form(None),
@@ -109,8 +109,8 @@ async def mantenimiento_correctivo_update(
         db,
         mantenimiento_id,
         current_entity,
-        cliente_id,
-        sucursal_id,
+        id_cliente,
+        id_sucursal,
         id_cuadrilla,
         fecha_apertura,
         fecha_cierre,
@@ -125,9 +125,9 @@ async def mantenimiento_correctivo_update(
     )
     return {
         "id": updated_mantenimiento.id,
-        "obra_id": updated_mantenimiento.obra_id,
-        "cliente_id": updated_mantenimiento.cliente_id,
-        "sucursal_id": updated_mantenimiento.sucursal_id,
+        "id_obra": updated_mantenimiento.id_obra,
+        "id_cliente": updated_mantenimiento.id_cliente,
+        "id_sucursal": updated_mantenimiento.id_sucursal,
         "id_cuadrilla": updated_mantenimiento.id_cuadrilla,
         "fecha_apertura": updated_mantenimiento.fecha_apertura,
         "fecha_cierre": updated_mantenimiento.fecha_cierre,

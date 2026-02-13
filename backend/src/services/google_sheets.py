@@ -28,7 +28,7 @@ storage_client = (
     else None
 )
 
-TRACKING_COLUMN_NAME = "_mantenimiento_id"
+TRACKING_COLUMN_NAME = "_id_mantenimiento"
 
 CORRECTIVO_HEADER = [
     "cliente",
@@ -82,14 +82,14 @@ def _blob_exists(path: str) -> bool:
     bucket = storage_client.bucket(GOOGLE_CLOUD_BUCKET_NAME)
     return bucket.blob(path).exists()
 
-def get_fotos_gallery_url(obra_id):
-    blob_path = f"fotos/{obra_id}/fotos/index.html"
+def get_fotos_gallery_url(id_obra):
+    blob_path = f"fotos/{id_obra}/fotos/index.html"
     if not _blob_exists(blob_path):
         return None
     return f"https://storage.googleapis.com/{GOOGLE_CLOUD_BUCKET_NAME}/{blob_path}"
 
-def get_planillas_gallery_url(obra_id):
-    blob_path = f"planillas/{obra_id}/planillas/index.html"
+def get_planillas_gallery_url(id_obra):
+    blob_path = f"planillas/{id_obra}/planillas/index.html"
     if not _blob_exists(blob_path):
         return None
     return f"https://storage.googleapis.com/{GOOGLE_CLOUD_BUCKET_NAME}/{blob_path}"
@@ -152,10 +152,10 @@ def _ensure_header(worksheet, header, visible_columns: int):
     _hide_column(worksheet, visible_columns + 1)
 
 def _tracking_token(source) -> str:
-    mantenimiento_id = source if isinstance(source, int) else getattr(source, "id", None)
-    if mantenimiento_id is None:
+    id_mantenimiento = source if isinstance(source, int) else getattr(source, "id", None)
+    if id_mantenimiento is None:
         return ""
-    return str(mantenimiento_id)
+    return str(id_mantenimiento)
 
 def _format_datetime_value(value):
     if value is None:
@@ -252,13 +252,13 @@ def update_correctivo(mantenimiento: MantenimientoCorrectivo):
         worksheet.update(f"A{cell.row}:{end_col}{cell.row}", [row])
     _safe_sheet_operation("update_correctivo", _operation)
 
-def delete_correctivo(mantenimiento_id: int):
+def delete_correctivo(id_mantenimiento: int):
     def _operation():
         worksheet = _get_worksheet("MantenimientosCorrectivos")
         if not worksheet:
             return
         _ensure_header(worksheet, CORRECTIVO_HEADER, CORRECTIVO_VISIBLE_COLUMNS)
-        token = _tracking_token(mantenimiento_id)
+        token = _tracking_token(id_mantenimiento)
         if not token:
             return
         try:
@@ -309,13 +309,13 @@ def update_preventivo(mantenimiento: MantenimientoPreventivo):
         worksheet.update(f"A{cell.row}:{end_col}{cell.row}", [row])
     _safe_sheet_operation("update_preventivo", _operation)
 
-def delete_preventivo(mantenimiento_id: int):
+def delete_preventivo(id_mantenimiento: int):
     def _operation():
         worksheet = _get_worksheet("MantenimientosPreventivos")
         if not worksheet:
             return
         _ensure_header(worksheet, PREVENTIVO_HEADER, PREVENTIVO_VISIBLE_COLUMNS)
-        token = _tracking_token(mantenimiento_id)
+        token = _tracking_token(id_mantenimiento)
         if not token:
             return
         try:

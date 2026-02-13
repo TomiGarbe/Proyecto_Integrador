@@ -107,7 +107,7 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
   const getClienteInfoFromSucursal = (sucursalId) => {
     if (!sucursalId) return { clienteId: null, clienteNombre: null };
     const meta = sucursalMeta[sucursalId];
-    const clienteId = meta?.cliente_id ?? meta?.id_cliente ?? null;
+    const clienteId = meta?.id_cliente ?? null;
     const clienteNombre =
       meta?.cliente_nombre ??
       meta?.cliente?.nombre ??
@@ -117,9 +117,9 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
 
   const attachClienteInfo = (items = []) =>
     (items || []).map((item) => {
-      const idSucursal = item.id_sucursal ?? item.sucursal_id ?? item.idSucursal ?? null;
+      const idSucursal = item.id_sucursal ?? item.idSucursal ?? null;
       const { clienteId, clienteNombre } = getClienteInfoFromSucursal(idSucursal);
-      const resolvedClienteId = item.cliente_id ?? item.id_cliente ?? clienteId;
+      const resolvedClienteId = item.id_cliente ?? clienteId;
       const resolvedClienteNombre =
         item.cliente_nombre ??
         findClienteNombre(resolvedClienteId) ??
@@ -128,7 +128,7 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
       return {
         ...item,
         id_sucursal: idSucursal,
-        cliente_id: resolvedClienteId,
+        id_cliente: resolvedClienteId,
         cliente_nombre: resolvedClienteNombre,
       };
     });
@@ -168,9 +168,7 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
     .map((sucursal) => {
       const meta = sucursalMeta[sucursal.id];
       const clienteId =
-        meta?.cliente_id ??
         meta?.id_cliente ??
-        sucursal.cliente_id ??
         sucursal.id_cliente ??
         null;
       const zona = normalizeZona(meta?.zona ?? sucursal.zona ?? null);
@@ -181,21 +179,21 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
         'Sin cliente';
       const attachCliente = (items = []) =>
         items.map((item) => {
-          const itemClienteId = item.cliente_id ?? item.id_cliente ?? clienteId;
+          const itemClienteId = item.id_cliente ?? clienteId;
           const itemClienteNombre =
             item.cliente_nombre ||
             clientes.find((c) => Number(c.id) === Number(itemClienteId))?.nombre ||
             clienteNombre;
           return {
             ...item,
-            cliente_id: itemClienteId,
+            id_cliente: itemClienteId,
             cliente_nombre: itemClienteNombre,
           };
         });
 
       return {
         ...sucursal,
-        cliente_id: clienteId,
+        id_cliente: clienteId,
         cliente_nombre: clienteNombre,
         zona,
         Correctivos: attachCliente(sucursal.Correctivos),
@@ -204,7 +202,7 @@ const useMapa = (mapInstanceRef, createRoutingControl, isMobile) => {
     })
     .filter((sucursal) => {
       if (!clienteFilter) return true;
-      return sucursal.cliente_id && String(sucursal.cliente_id) === clienteFilter;
+      return sucursal.id_cliente && String(sucursal.id_cliente) === clienteFilter;
     })
     .filter((sucursal) => {
       if (!zonaSucursalFilter) return true;

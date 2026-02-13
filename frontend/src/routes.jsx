@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Users from './pages/Users';
 import Clientes from './pages/Clientes';
 import Cuadrillas from './pages/Cuadrillas';
+//import Materiales from './pages/Materiales';
 import Mantenimiento from './pages/Mantenimiento';
 import MantenimientoPreventivo from './pages/MantenimientosPreventivos';
 import MantenimientoCorrectivo from './pages/MantenimientosCorrectivos';
@@ -18,6 +19,7 @@ const routes = [
   { path: '/users', element: <Users />, adminOnly: true },
   { path: '/clientes', element: <Clientes />, usersOnly: true },
   { path: '/cuadrillas', element: <Cuadrillas />, usersOnly: true },
+  /*{ path: '/materiales', element: <Materiales />, usersOnly: true },*/
   { path: '/mantenimientos-preventivos', element: <MantenimientoPreventivo />, hideBackButton: true },
   { path: '/mantenimientos-correctivos', element: <MantenimientoCorrectivo />, hideBackButton: true },
   { path: '/preventivo', element: <Preventivo />, hideBackButton: true },

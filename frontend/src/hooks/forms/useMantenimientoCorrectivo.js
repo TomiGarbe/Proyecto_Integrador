@@ -83,7 +83,7 @@ const useMantenimientoCorrectivo = () => {
     let filtered = [...mantenimientos];
 
     if (newFilters.cliente) {
-      filtered = filtered.filter((m) => String(m.cliente_id || m.id_cliente) === newFilters.cliente);
+      filtered = filtered.filter((m) => String(m.id_cliente) === newFilters.cliente);
     }
     if (newFilters.cuadrilla) {
       filtered = filtered.filter(m => m.id_cuadrilla === parseInt(newFilters.cuadrilla));
@@ -169,8 +169,8 @@ const useMantenimientoCorrectivo = () => {
     return sucursal ? sucursal.zona : 'Desconocida';
   };
 
-  const getClienteNombre = (cliente_id) => {
-    const cliente = clientes.find((c) => c.id === cliente_id);
+  const getClienteNombre = (id_cliente) => {
+    const cliente = clientes.find((c) => c.id === id_cliente);
     return cliente ? cliente.nombre : 'Sin cliente';
   };
 

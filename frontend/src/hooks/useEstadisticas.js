@@ -93,7 +93,7 @@ const useEstadisticas = () => {
     if (clienteFilter) {
       filtered = filtered.filter((item) => {
         const sucursal = sucursalMap[item.id_sucursal];
-        return sucursal && String(sucursal.cliente_id) === clienteFilter;
+        return sucursal && String(sucursal.id_cliente) === clienteFilter;
       });
     }
     if (zonaFilter) {
@@ -199,7 +199,7 @@ const useEstadisticas = () => {
       if (!zoneMap.has(zoneName)) {
         const relevantSucursales = sucursales.filter((s) => {
           if (s.zona !== zoneName) return false;
-          if (filters.cliente && String(s.cliente_id) !== filters.cliente) return false;
+          if (filters.cliente && String(s.id_cliente) !== filters.cliente) return false;
           if (filters.sucursal && String(s.id) !== filters.sucursal) return false;
           return true;
         });

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from "react-router-dom"
 import { AuthContext } from '../context/AuthContext';
-import { useAuthRoles } from "../hooks/useAuthRoles"
-import { get_notificaciones_correctivos, get_notificaciones_preventivos, correctivo_leido, preventivo_leido, delete_notificacion } from '../services/notificaciones';
+import { useAuthRoles } from "../hooks/useAuthRoles";
+import { getMantenimientosCorrectivos } from "../services/mantenimientoCorrectivoService";
+import { getMantenimientosPreventivos } from "../services/mantenimientoPreventivoService";
+import { get_notificaciones, notificacion_leida, delete_notificacion } from '../services/notificaciones';
 import { subscribeToNotifications } from '../services/notificationWs';
 
 const useNotifications = () => {
@@ -21,29 +23,53 @@ const useNotifications = () => {
     try {
       if (!uid) return;
 
-      const [correctivosResp, preventivosResp] = await Promise.all([
-        get_notificaciones_correctivos(uid),
-        get_notificaciones_preventivos(uid)
+      const [correctivosResp, preventivosResp, notificacionesResp] = await Promise.all([
+        getMantenimientosCorrectivos(uid),
+        getMantenimientosPreventivos(uid),
+        get_notificaciones(uid)
       ]);
 
-      const correctivos = Array.isArray(correctivosResp.data) ? correctivosResp.data : [];
-      const preventivos = Array.isArray(preventivosResp.data) ? preventivosResp.data : [];
+      const correctivosMap = new Map(
+        (correctivosResp.data || []).map(c => [Number(c.id_obra), Number(c.id)])
+      );
 
-      const mappedCorrectivos = correctivos.map((notif) => ({
-        ...notif,
-        tipo: 'correctivo'
-      }));
+      const preventivosMap = new Map(
+        (preventivosResp.data || []).map(p => [Number(p.id_obra), Number(p.id)])
+      );
 
-      const mappedPreventivos = preventivos.map((notif) => ({
-        ...notif,
-        tipo: 'preventivo'
-      }));
+      const notificaciones = Array.isArray(notificacionesResp.data)
+      ? notificacionesResp.data
+      : [];
 
-      const allNotificaciones = [...mappedCorrectivos, ...mappedPreventivos];
-      setUnreadCount(allNotificaciones.filter(n => !n.leida).length);
+      const mappedNotificaciones = notificaciones
+        .map(notif => {
+          const obraId = Number(notif.id_obra);
 
-      allNotificaciones.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setNotifications(allNotificaciones);
+          if (correctivosMap.has(obraId)) {
+            return {
+              ...notif,
+              tipo: "correctivo",
+              id_mantenimiento: correctivosMap.get(obraId)
+            };
+          }
+
+          if (preventivosMap.has(obraId)) {
+            return {
+              ...notif,
+              tipo: "preventivo",
+              id_mantenimiento: preventivosMap.get(obraId)
+            };
+          }
+
+          return null;
+        })
+        .filter(Boolean);
+
+      setUnreadCount(mappedNotificaciones.filter(n => !n.leida).length);
+      mappedNotificaciones.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setNotifications(mappedNotificaciones);
     } catch (error) {
       console.error('Error obteniendo notificaciones:', error);
     }
@@ -123,17 +149,14 @@ const useNotifications = () => {
   const handleClick = async (notification) => {
     if (notification.tipo === "correctivo") {
       const mantenimientoId = notification.id_mantenimiento
-      handleCloseNotifications()
       navigate("/correctivo", { state: { mantenimientoId } })
-      await correctivo_leido(notification.id)
-      await fetchNotifications()
     } else if (notification.tipo === "preventivo") {
       const mantenimientoId = notification.id_mantenimiento
-      handleCloseNotifications()
       navigate("/preventivo", { state: { mantenimientoId } })
-      await preventivo_leido(notification.id)
-      await fetchNotifications()
     }
+    handleCloseNotifications()
+    await notificacion_leida(notification.id)
+    await fetchNotifications()
   }
 
   const handleDeleteNotification = async (notificationId, e) => {
@@ -148,13 +171,9 @@ const useNotifications = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      const correctivosNoLeidos = notifications.filter((n) => n.tipo === "correctivo" && !n.leida)
-      const preventivosNoLeidos = notifications.filter((n) => n.tipo === "preventivo" && !n.leida)
+      const notificacionesNoLeidas = notifications.filter((n) => !n.leida)
 
-      await Promise.all([
-        ...correctivosNoLeidos.map((n) => correctivo_leido(n.id)),
-        ...preventivosNoLeidos.map((n) => preventivo_leido(n.id)),
-      ])
+      await Promise.all(notificacionesNoLeidas.map((n) => notificacion_leida(n.id)))
 
       await fetchNotifications()
     } catch (error) {

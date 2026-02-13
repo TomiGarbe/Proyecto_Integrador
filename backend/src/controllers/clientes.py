@@ -21,22 +21,22 @@ def clientes_get(request: Request, db: Session = Depends(get_db)):
     clientes = get_clientes(db, current_entity)
     return clientes
 
-@router.get("/{cliente_id}", response_model=ClienteResponse)
-def cliente_get(cliente_id: int, request: Request, db: Session = Depends(get_db)):
+@router.get("/{id_cliente}", response_model=ClienteResponse)
+def cliente_get(id_cliente: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    return get_cliente(db, cliente_id, current_entity)
+    return get_cliente(db, id_cliente, current_entity)
 
 @router.post("/", response_model=ClienteResponse)
 def cliente_create(cliente: ClienteCreate, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
     return create_cliente(db, cliente.nombre, cliente.contacto, cliente.email, current_entity)
 
-@router.put("/{cliente_id}", response_model=ClienteResponse)
-def cliente_update(cliente_id: int, cliente: ClienteUpdate, request: Request, db: Session = Depends(get_db)):
+@router.put("/{id_cliente}", response_model=ClienteResponse)
+def cliente_update(id_cliente: int, cliente: ClienteUpdate, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    return update_cliente(db, cliente_id, current_entity, cliente.nombre, cliente.contacto, cliente.email)
+    return update_cliente(db, id_cliente, current_entity, cliente.nombre, cliente.contacto, cliente.email)
 
-@router.delete("/{cliente_id}", response_model=dict)
-def cliente_delete(cliente_id: int, request: Request, db: Session = Depends(get_db)):
+@router.delete("/{id_cliente}", response_model=dict)
+def cliente_delete(id_cliente: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    return delete_cliente(db, cliente_id, current_entity)
+    return delete_cliente(db, id_cliente, current_entity)

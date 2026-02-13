@@ -69,7 +69,7 @@ const MantenimientosCorrectivos = () => {
 
   const tableData = filteredMantenimientos.map((m) => ({
     ...m,
-    cliente: getClienteNombre(m.cliente_id || m.id_cliente),
+    cliente: getClienteNombre(m.id_cliente),
     sucursal: getSucursalNombre(m.id_sucursal),
     cuadrilla: getCuadrillaNombre(m.id_cuadrilla),
     zona: getZonaNombre(m.id_sucursal),
@@ -78,7 +78,7 @@ const MantenimientosCorrectivos = () => {
   }));
 
   const sucursalOptions = filters.cliente
-    ? sucursales.filter((s) => String(s.cliente_id) === filters.cliente)
+    ? sucursales.filter((s) => String(s.id_cliente) === filters.cliente)
     : sucursales;
 
   const filterButton = (

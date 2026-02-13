@@ -17,11 +17,11 @@ def get_users(db: Session, current_entity: dict):
     _ensure_admin(current_entity)
     return db.query(Usuario).all()
 
-def get_user(db: Session, user_id: int, current_entity: dict):
+def get_user(db: Session, id_user: int, current_entity: dict):
     _ensure_entity(current_entity)
-    user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    user = db.query(Usuario).filter(Usuario.id == id_user).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    if current_entity["type"] != "usuario" or (current_entity["data"]["rol"] != Role.ADMIN and current_entity["data"]["id"] != user_id):
+    if current_entity["type"] != "usuario" or (current_entity["data"]["rol"] != Role.ADMIN and current_entity["data"]["id"] != id_user):
         raise HTTPException(status_code=403, detail="No tienes permisos para ver este usuario")
     return user

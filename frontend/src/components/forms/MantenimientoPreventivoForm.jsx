@@ -59,7 +59,7 @@ const MantenimientoPreventivoForm = ({
         setCuadrillas(cuadrillasResponse.data || []);
         setPreventivosExistentes(preventivosResponse.data || []);
 
-        let initialClienteId = mantenimiento?.cliente_id || mantenimiento?.id_cliente;
+        let initialClienteId = mantenimiento?.id_cliente;
         if (!initialClienteId && clientesData.length) {
           initialClienteId = clientesData[0].id;
         }
@@ -193,7 +193,7 @@ const MantenimientoPreventivoForm = ({
     }
 
     const payload = {
-      cliente_id: parseInt(clienteId, 10),
+      id_cliente: parseInt(clienteId, 10),
       id_sucursal: parseInt(formData.id_sucursal, 10),
       id_cuadrilla: parseInt(formData.id_cuadrilla, 10),
       frecuencia: frecuenciaSucursal,

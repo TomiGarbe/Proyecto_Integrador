@@ -21,9 +21,9 @@ def get_clientes(db_session: Session, current_entity: dict):
     _ensure_entity(current_entity)
     return db_session.query(Cliente).all()
 
-def get_cliente(db_session: Session, cliente_id: int, current_entity: dict):
+def get_cliente(db_session: Session, id_cliente: int, current_entity: dict):
     _ensure_entity(current_entity)
-    cliente = db_session.query(Cliente).filter(Cliente.id == cliente_id).first()
+    cliente = db_session.query(Cliente).filter(Cliente.id == id_cliente).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return cliente
@@ -43,14 +43,14 @@ def create_cliente(db_session: Session, nombre: str, contacto: str, email: str, 
 
 def update_cliente(
     db_session: Session,
-    cliente_id: int,
+    id_cliente: int,
     current_entity: dict,
     nombre: Optional[str] = None,
     contacto: Optional[str] = None,
     email: Optional[str] = None,
 ):
     _ensure_usuario(current_entity)
-    cliente = get_cliente(db_session, cliente_id)
+    cliente = get_cliente(db_session, id_cliente)
 
     if nombre is not None:
         cliente.nombre = nombre
@@ -67,10 +67,10 @@ def update_cliente(
         raise HTTPException(status_code=500, detail=f"Error actualizando cliente: {str(exc)}")
     return cliente
 
-def delete_cliente(db_session: Session, cliente_id: int, current_entity: dict):
+def delete_cliente(db_session: Session, id_cliente: int, current_entity: dict):
     _ensure_usuario(current_entity)
-    cliente = get_cliente(db_session, cliente_id)
-    sucursales_ids = [s.id for s in cliente.sucursales]
+    cliente = get_cliente(db_session, id_cliente)
+    ids_sucursales = [s.id for s in cliente.sucursales]
 
     try:
         db_session.delete(cliente)
@@ -79,13 +79,13 @@ def delete_cliente(db_session: Session, cliente_id: int, current_entity: dict):
         db_session.rollback()
         raise HTTPException(status_code=500, detail=f"Error eliminando cliente: {str(exc)}")
 
-    if sucursales_ids:
+    if ids_sucursales:
         try:
             initialize_firebase()
-            for sucursal_id in sucursales_ids:
-                ref = db.reference(f"/sucursales/{sucursal_id}")
+            for id_sucursal in ids_sucursales:
+                ref = db.reference(f"/sucursales/{id_sucursal}")
                 ref.delete()
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Error eliminando sucursales de Firebase: {str(exc)}")
 
-    return {"message": f"Cliente con id {cliente_id} eliminado"}
+    return {"message": f"Cliente con id {id_cliente} eliminado"}

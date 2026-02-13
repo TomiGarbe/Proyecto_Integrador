@@ -16,9 +16,9 @@ def get_cuadrillas(db: Session, current_entity: dict):
     _ensure_entity(current_entity)
     return db.query(Cuadrilla).all()
 
-def get_cuadrilla(db: Session, cuadrilla_id: int, current_entity: dict):
+def get_cuadrilla(db: Session, id_cuadrilla: int, current_entity: dict):
     _ensure_entity(current_entity)
-    cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
+    cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == id_cuadrilla).first()
     if not cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
     return cuadrilla

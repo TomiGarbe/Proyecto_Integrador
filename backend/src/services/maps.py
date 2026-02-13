@@ -44,8 +44,8 @@ async def get_sucursales_locations(current_entity: dict) -> List[Sucursal]:
                 for i, data in enumerate(sucursales_data) if data is not None
             ]
         return [
-            Sucursal(id=sucursal_id, name=data.get('name', 'Unknown'), lat=data.get('lat', 0.0), lng=data.get('lng', 0.0))
-            for sucursal_id, data in sucursales_data.items()
+            Sucursal(id=id_sucursal, name=data.get('name', 'Unknown'), lat=data.get('lat', 0.0), lng=data.get('lng', 0.0))
+            for id_sucursal, data in sucursales_data.items()
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo sucursales de Firebase: {str(e)}")
@@ -84,20 +84,20 @@ def get_selection(db_session: Session, id_cuadrilla: int, current_entity: dict):
         return []
     return obras
 
-async def update_user_location(current_entity: dict, firebase_uid: str, user_id: str, tipo: str, name: str, lat: float, lng: float):
+async def update_user_location(current_entity: dict, firebase_uid: str, id_user: str, tipo: str, name: str, lat: float, lng: float):
     _ensure_entity(current_entity)
     
     try:
         initialize_firebase()
         ref = db.reference(f'/users/{firebase_uid}')
         ref.set({
-            'id': user_id,
+            'id': id_user,
             'tipo': tipo,
             'name': name,
             'lat': lat,
             'lng': lng
         })
-        return {"message": f"Ubicación actualizada para {user_id}"}
+        return {"message": f"Ubicación actualizada para {id_user}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error actualizando ubicación: {str(e)}")
 

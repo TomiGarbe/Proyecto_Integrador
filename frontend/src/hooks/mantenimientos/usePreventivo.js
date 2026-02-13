@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { updateMantenimientoPreventivo, deleteMantenimientoPhoto, getMantenimientoPreventivo } from '../../services/mantenimientoPreventivoService';
+import { updateMantenimientoPreventivo, getMantenimientoPreventivo } from '../../services/mantenimientoPreventivoService';
+import { deleteFoto } from '../../services/obras';
 import { getCuadrillas } from '../../services/cuadrillaService';
 import { getSucursales } from '../../services/sucursalService';
-import { getPreventivos, selectPreventivo, deletePreventivo } from '../../services/maps';
-import { getChatPreventivo, sendMessagePreventivo } from '../../services/chats';
+import { getSelection, selectObra, deleteObra } from '../../services/maps';
+import { getChat, sendMessage } from '../../services/chats';
 import { useAuthRoles } from '../useAuthRoles';
 import useIsMobile from '../useIsMobile';
 import useChat from './useChat';
@@ -24,6 +25,7 @@ const usePreventivo = (mantenimientoId) => {
     extendido: null,
     estado: 'Pendiente',
   });
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +39,8 @@ const usePreventivo = (mantenimientoId) => {
   const isMobile = useIsMobile();
 
   const handleAddToRoute = async () => {
-    const seleccion = { id_mantenimiento: mantenimiento.id, id_sucursal: mantenimiento.id_sucursal };
-    selectPreventivo(seleccion);
+    const seleccion = { id_obra: mantenimiento.id_obra, id_sucursal: mantenimiento.id_sucursal };
+    selectObra(seleccion);
     if (formData.estado === 'Pendiente') {
       const updatedFormData = {
         ...formData,
@@ -50,7 +52,7 @@ const usePreventivo = (mantenimientoId) => {
   };
 
   const handleRemoveFromRoute = () => {
-    deletePreventivo(mantenimiento.id);
+    deleteObra(mantenimiento.id_obra);
     setSuccess('Mantenimiento eliminado de la ruta.');
   };
 
@@ -76,7 +78,8 @@ const usePreventivo = (mantenimientoId) => {
         extendido: response.data.extendido || null,
         estado: response.data.estado || 'Pendiente',
       });
-      await cargarMensajes(response.data.id);
+      await cargarMensajes(response.data.id_obra);
+      setIsDataLoaded(true);
     } catch (error) {
       console.error('Error fetching mantenimiento:', error);
       setError('Error al cargar los datos actualizados.');
@@ -88,16 +91,16 @@ const usePreventivo = (mantenimientoId) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [clientesResponse, cuadrillasResponse, sucursalesResponse, preventivosResponse] = await Promise.all([
+      const [clientesResponse, cuadrillasResponse, sucursalesResponse, selectionResponse] = await Promise.all([
         getClientes(),
         getCuadrillas(),
         getSucursales(),
-        getPreventivos(parseInt(id)),
+        getSelection(parseInt(id)),
       ]);
       setClientes(clientesResponse.data || []);
       setCuadrillas(cuadrillasResponse.data);
       setSucursales(sucursalesResponse.data);
-      const preventivoId = preventivosResponse.data.filter(p => p.id_mantenimiento === mantenimientoId);
+      const preventivoId = selectionResponse.data.filter(s => s.id_obra === mantenimiento.id_obra);
       if (preventivoId.length) {
         setIsSelected(true);
       }
@@ -110,8 +113,13 @@ const usePreventivo = (mantenimientoId) => {
 
   useEffect(() => {
     fetchMantenimiento();
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (isDataLoaded) {
+      fetchData();
+    }
+  }, [isDataLoaded]);
 
   const handlePhotoUpload = (files) => {
     setFormData({ ...formData, fotos: files });
@@ -132,7 +140,7 @@ const usePreventivo = (mantenimientoId) => {
     try {
       for (const photoUrl of photos) {
         const fileName = photoUrl.split('/').pop();
-        await deleteMantenimientoPhoto(mantenimiento.id, fileName);
+        await deleteFoto(mantenimiento.id_obra, fileName);
       }
       setSuccess('Fotos eliminadas correctamente.');
       await fetchMantenimiento();
@@ -161,7 +169,7 @@ const usePreventivo = (mantenimientoId) => {
     if (data.extendido) {
       formDataToSend.append('extendido', data.extendido);
     }
-    formDataToSend.append('cliente_id', mantenimiento.cliente_id || mantenimiento.id_cliente || '');
+    formDataToSend.append('id_cliente', mantenimiento.id_cliente || '');
     formDataToSend.append('id_sucursal', data.id_sucursal || mantenimiento.id_sucursal);
     formDataToSend.append('estado', data.estado);
 
@@ -221,7 +229,7 @@ const usePreventivo = (mantenimientoId) => {
 
   const cargarMensajes = async (id) => {
     try {
-      const response = await getChatPreventivo(id);
+      const response = await getChat(id);
       setMensajes(response.data);
       scrollToBottom();
     } catch (error) {
@@ -239,7 +247,7 @@ const usePreventivo = (mantenimientoId) => {
     if (archivoAdjunto) formDataMsg.append('archivo', archivoAdjunto);
 
     try {
-      await sendMessagePreventivo(mantenimiento.id, formDataMsg);
+      await sendMessage(mantenimiento.id_obra, formDataMsg);
       setNuevoMensaje('');
       setArchivoAdjunto(null);
       setPreviewArchivoAdjunto(null);

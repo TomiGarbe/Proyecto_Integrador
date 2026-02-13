@@ -1,5 +1,5 @@
 import api from './api';
-import { getClientes, getClienteSucursales, createClienteSucursal } from './clienteService';
+import { getClientes } from './clienteService';
 
 const normalizeSucursal = (sucursal, clienteNombre) => ({
   ...sucursal,
@@ -8,31 +8,38 @@ const normalizeSucursal = (sucursal, clienteNombre) => ({
 });
 
 export const getSucursales = async () => {
-  const clientesResponse = await getClientes();
-  const clientes = clientesResponse.data || [];
+  const [clientesResp, sucursalesResp] = await Promise.all([
+    getClientes(),
+    api.get('/sucursales/')
+  ]);
 
-  const sucursales = (
-    await Promise.all(
-      clientes.map(async (cliente) => {
-        const response = await getClienteSucursales(cliente.id);
-        return (response.data || []).map((sucursal) => normalizeSucursal(sucursal, cliente.nombre));
-      }),
+  const clientes = clientesResp.data || [];
+  const sucursales = sucursalesResp.data || [];
+
+  const clienteMap = new Map(clientes.map(c => [c.id, c.nombre]));
+
+  return {
+    data: sucursales.map(s =>
+      normalizeSucursal(s, clienteMap.get(s.cliente_id))
     )
-  ).flat();
-
-  return { data: sucursales };
+  };
 };
 
-export const getSucursalesByCliente = (clienteId) =>
-  getClienteSucursales(clienteId).then((response) => ({
+export const getSucursalesByCliente = async (clienteId) => {
+  const response = await api.get(`/sucursales/${clienteId}`);
+
+  return {
     ...response,
-    data: (response.data || []).map((sucursal) => normalizeSucursal(sucursal)),
-  }));
+    data: (response.data || []).map((sucursal) =>
+      normalizeSucursal(sucursal)
+    ),
+  };
+};
 
 export const getSucursal = (id) => api.get(`/sucursales/${id}`);
 
 export const createSucursal = (clienteId, sucursal) =>
-  createClienteSucursal(clienteId, {
+  api.post(`/sucursales/`, {
     ...sucursal,
     cliente_id: clienteId,
     frecuencia_preventivo: sucursal.frecuencia_preventivo || null,

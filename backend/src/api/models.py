@@ -29,7 +29,7 @@ class Sucursal(Base):
     zona = Column(String)
     direccion = Column(String)
     superficie = Column(String)
-    cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
+    id_cliente = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     frecuencia_preventivo = Column(String, nullable=True)
     
     cliente = relationship("Cliente", back_populates="sucursales")
@@ -67,8 +67,8 @@ class MantenimientoPreventivo(Base):
     __tablename__ = "mantenimiento_preventivo"
     id = Column(Integer, primary_key=True)
     obra_id = Column(Integer, ForeignKey("obra.id"), unique=True)
-    cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
-    sucursal_id = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
+    id_cliente = Column(Integer, ForeignKey("cliente.id"), nullable=False)
+    id_sucursal = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
     frecuencia = Column(String)
     id_cuadrilla = Column(Integer, ForeignKey("cuadrilla.id"))
     fecha_apertura = Column(Date)
@@ -91,9 +91,9 @@ class MantenimientoPreventivoPlanilla(Base):
 class MantenimientoCorrectivo(Base):
     __tablename__ = "mantenimiento_correctivo"
     id = Column(Integer, primary_key=True)
-    obra_id = Column(Integer, ForeignKey("obra.id"), unique=True)
-    cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
-    sucursal_id = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
+    id_obra = Column(Integer, ForeignKey("obra.id"), unique=True)
+    id_cliente = Column(Integer, ForeignKey("cliente.id"), nullable=False)
+    id_sucursal = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
     id_cuadrilla = Column(Integer, ForeignKey("cuadrilla.id"))
     fecha_apertura = Column(Date)
     fecha_cierre = Column(Date, nullable=True)
@@ -113,7 +113,7 @@ class MantenimientoCorrectivo(Base):
 class FotoObra(Base):
     __tablename__ = "foto_obra"
     id = Column(Integer, primary_key=True)
-    obra_id = Column(Integer, ForeignKey("obra.id"))
+    id_obra = Column(Integer, ForeignKey("obra.id"))
     url = Column(String, nullable=False)
 
     obra = relationship("Obra", back_populates="fotos")
@@ -197,10 +197,10 @@ class MovimientoStock(Base):
     __tablename__ = "movimientos_stock"
 
     id = Column(Integer, primary_key=True, index=True)
-    material_id = Column(Integer, ForeignKey("materiales.id"), nullable=False)
+    id_material = Column(Integer, ForeignKey("materiales.id"), nullable=False)
     tipo_movimiento = Column(String(20), nullable=False)
     cantidad = Column(Numeric(10,2), nullable=False)
-    obra_id = Column(Integer, ForeignKey("obra.id"), nullable=True)
+    id_obra = Column(Integer, ForeignKey("obra.id"), nullable=True)
     fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
 
     obra = relationship("Obra", back_populates="movimientos_stock")

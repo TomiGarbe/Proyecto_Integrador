@@ -114,7 +114,7 @@ class SucursalCreate(BaseModel):
     zona: str
     direccion: Dict[str, Any]
     superficie: str
-    cliente_id: int
+    id_cliente: int
     frecuencia_preventivo: Optional[Frecuencia] = None
 
 class SucursalUpdate(BaseModel):
@@ -122,13 +122,13 @@ class SucursalUpdate(BaseModel):
     zona: Optional[str] = None
     direccion: Optional[Dict[str, Any]] = None
     superficie: Optional[str] = None
-    cliente_id: Optional[int] = None
+    id_cliente: Optional[int] = None
     frecuencia_preventivo: Optional[Frecuencia] = None
     
 # Esquemas para Mantenimiento Preventivo
 class MantenimientoPreventivoCreate(BaseModel):
-    cliente_id: int
-    sucursal_id: int
+    id_cliente: int
+    id_sucursal: int
     frecuencia: Frecuencia
     id_cuadrilla: int
     fecha_apertura: date
@@ -136,8 +136,8 @@ class MantenimientoPreventivoCreate(BaseModel):
 
 # Esquemas para Mantenimiento Correctivo
 class MantenimientoCorrectivoCreate(BaseModel):
-    cliente_id: int
-    sucursal_id: int
+    id_cliente: int
+    id_sucursal: int
     id_cuadrilla: Optional[int] = None
     fecha_apertura: date
     numero_caso: str
@@ -179,8 +179,8 @@ class MaterialCreate(BaseModel):
     stock_minimo: Decimal = 0
 
 class MovimientoStockCreate(BaseModel):
-    material_id: int
+    id_material: int
     tipo_movimiento: TipoMovimiento
     cantidad: Decimal
-    obra_id: Optional[int] = None
+    id_obra: Optional[int] = None
     tipo_obra: Optional[TipoObra] = None

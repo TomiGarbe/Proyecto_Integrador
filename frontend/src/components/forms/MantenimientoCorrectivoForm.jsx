@@ -42,7 +42,7 @@ const MantenimientoCorrectivoForm = ({
         setClientes(clientesData);
         setCuadrillas(cuadrillasResponse.data || []);
 
-        let initialClienteId = mantenimiento?.cliente_id || mantenimiento?.id_cliente;
+        let initialClienteId = mantenimiento?.id_cliente;
         if (!initialClienteId && clientesData.length) {
           initialClienteId = clientesData[0].id;
         }
@@ -110,7 +110,7 @@ const MantenimientoCorrectivoForm = ({
 
       const payload = {
         ...formData,
-        cliente_id: parseInt(clienteId, 10),
+        id_cliente: parseInt(clienteId, 10),
         id_sucursal: formData.id_sucursal,
       };
 

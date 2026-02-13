@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { updateMantenimientoCorrectivo, deleteMantenimientoPhoto, getMantenimientoCorrectivo } from '../../services/mantenimientoCorrectivoService';
+import { updateMantenimientoCorrectivo, getMantenimientoCorrectivo } from '../../services/mantenimientoCorrectivoService';
+import { deleteFoto } from '../../services/obras';
 import { getSucursales } from '../../services/sucursalService';
 import { getCuadrillas } from '../../services/cuadrillaService';
-import { getCorrectivos, selectCorrectivo, deleteCorrectivo } from '../../services/maps';
-import { getChatCorrectivo, sendMessageCorrectivo } from '../../services/chats';
+import { getSelection, selectObra, deleteObra } from '../../services/maps';
+import { getChat, sendMessage } from '../../services/chats';
 import { useAuthRoles } from '../useAuthRoles';
 import useIsMobile from '../useIsMobile';
 import useChat from './useChat';
@@ -24,6 +25,7 @@ const useCorrectivo = (mantenimientoId) => {
     extendido: '',
     estado: '',
   });
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +39,8 @@ const useCorrectivo = (mantenimientoId) => {
   const isMobile = useIsMobile();
 
   const handleAddToRoute = async () => {
-    const seleccion = { id_mantenimiento: mantenimiento.id, id_sucursal: mantenimiento.id_sucursal };
-    selectCorrectivo(seleccion);
+    const seleccion = { id_obra: mantenimiento.id_obra, id_sucursal: mantenimiento.id_sucursal };
+    selectObra(seleccion);
     if (formData.estado === 'Pendiente') {
       const updatedFormData = {
         ...formData,
@@ -50,7 +52,7 @@ const useCorrectivo = (mantenimientoId) => {
   };
 
   const handleRemoveFromRoute = () => {
-    deleteCorrectivo(mantenimiento.id);
+    deleteObra(mantenimiento.id_obra);
     setSuccess('Mantenimiento eliminado de la ruta.');
   };
 
@@ -76,7 +78,8 @@ const useCorrectivo = (mantenimientoId) => {
         extendido: response.data.extendido || '',
         estado: response.data.estado,
       });
-      await cargarMensajes(response.data.id);
+      await cargarMensajes(response.data.id_obra);
+      setIsDataLoaded(true);
     } catch (error) {
       console.error('Error fetching mantenimiento:', error);
       setError('Error al cargar los datos actualizados.');
@@ -88,16 +91,16 @@ const useCorrectivo = (mantenimientoId) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [clientesResponse, sucursalesResponse, cuadrillasResponse, correctivosResponse] = await Promise.all([
+      const [clientesResponse, sucursalesResponse, cuadrillasResponse, selectionResponse] = await Promise.all([
         getClientes(),
         getSucursales(),
         getCuadrillas(),
-        getCorrectivos(parseInt(id)),
+        getSelection(parseInt(id)),
       ]);
       setClientes(clientesResponse.data || []);
       setSucursales(sucursalesResponse.data);
       setCuadrillas(cuadrillasResponse.data);
-      const correctivoId = correctivosResponse.data.filter(c => c.id_mantenimiento === mantenimientoId);
+      const correctivoId = selectionResponse.data.filter(s => s.id_obra === mantenimiento.id_obra);
       if (correctivoId.length) {
         setIsSelected(true);
       }
@@ -110,8 +113,13 @@ const useCorrectivo = (mantenimientoId) => {
 
   useEffect(() => {
     fetchMantenimiento();
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (isDataLoaded) {
+      fetchData();
+    }
+  }, [isDataLoaded]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -137,7 +145,7 @@ const useCorrectivo = (mantenimientoId) => {
     try {
       for (const photoUrl of photos) {
         const fileName = photoUrl.split('/').pop();
-        await deleteMantenimientoPhoto(mantenimiento.id, fileName);
+        await deleteFoto(mantenimiento.id_obra, fileName);
       }
       setSuccess('Fotos eliminadas correctamente.');
       await fetchMantenimiento();
@@ -177,7 +185,7 @@ const useCorrectivo = (mantenimientoId) => {
     if (data.extendido) {
       formDataToSend.append('extendido', data.extendido);
     }
-    formDataToSend.append('cliente_id', mantenimiento.cliente_id || mantenimiento.id_cliente || '');
+    formDataToSend.append('id_cliente', mantenimiento.id_cliente || '');
     formDataToSend.append('id_sucursal', data.id_sucursal || mantenimiento.id_sucursal);
     if (data.estado) {
       formDataToSend.append('estado', data.estado);
@@ -226,7 +234,7 @@ const useCorrectivo = (mantenimientoId) => {
 
   const cargarMensajes = async (id) => {
     try {
-      const response = await getChatCorrectivo(id);
+      const response = await getChat(id);
       setMensajes(response.data);
       scrollToBottom();
     } catch (error) {
@@ -244,7 +252,7 @@ const useCorrectivo = (mantenimientoId) => {
     if (archivoAdjunto) message.append('archivo', archivoAdjunto);
 
     try {
-      await sendMessageCorrectivo(mantenimiento.id, message);
+      await sendMessage(mantenimiento.id_obra, message);
       setNuevoMensaje('');
       setArchivoAdjunto(null);
       setPreviewArchivoAdjunto(null);

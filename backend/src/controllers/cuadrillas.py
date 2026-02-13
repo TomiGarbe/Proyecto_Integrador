@@ -12,8 +12,8 @@ async def cuadrillas_get(request: Request, db: Session = Depends(get_db)):
     cuadrillas = get_cuadrillas(db, current_entity)
     return [{"id": c.id, "nombre": c.nombre, "zona": c.zona, "email": c.email} for c in cuadrillas]
 
-@router.get("/{cuadrilla_id}", response_model=dict)
-async def cuadrilla_get(cuadrilla_id: int, request: Request, db: Session = Depends(get_db)):
+@router.get("/{id_cuadrilla}", response_model=dict)
+async def cuadrilla_get(id_cuadrilla: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    cuadrilla = get_cuadrilla(db, cuadrilla_id, current_entity)
+    cuadrilla = get_cuadrilla(db, id_cuadrilla, current_entity)
     return {"id": cuadrilla.id, "nombre": cuadrilla.nombre, "zona": cuadrilla.zona, "email": cuadrilla.email}

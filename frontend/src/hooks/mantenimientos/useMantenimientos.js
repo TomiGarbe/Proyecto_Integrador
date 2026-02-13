@@ -47,8 +47,8 @@ const useMantenimientos = (
     return sucursal ? sucursal.zona : 'Desconocida';
   };
 
-  const getClienteNombre = (cliente_id) => {
-    const cliente = clientes.find((c) => c.id === cliente_id);
+  const getClienteNombre = (id_cliente) => {
+    const cliente = clientes.find((c) => c.id === id_cliente);
     return cliente ? cliente.nombre : 'Sin cliente';
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUsersLocations, getSucursalesLocations, getCorrectivos, getPreventivos } from "../../services/maps";
+import { getUsersLocations, getSucursalesLocations, getSelection } from "../../services/maps";
 import { getMantenimientosCorrectivos } from "../../services/mantenimientoCorrectivoService";
 import { getMantenimientosPreventivos } from "../../services/mantenimientoPreventivoService";
 
@@ -97,12 +97,24 @@ export function useMapsData() {
     if (!sucursalesLocations.length || !cuadrillas.length) return;
     try {
       const updatedCuadrillas = await Promise.all(cuadrillas.map(async cuadrilla => {
-          const [Correctivos, Preventivos] = await Promise.all([
-            getCorrectivos(cuadrilla.id),
-            getPreventivos(cuadrilla.id)
-          ]);
-          const correctivoIds = Correctivos.data?.map(c => Number(c.id_sucursal)) || [];
-          const preventivoIds = Preventivos.data?.map(p => Number(p.id_sucursal)) || [];
+          const selection = await Promise.all(getSelection(cuadrilla.id));
+          const correctivoObras = new Set(correctivos.map(c => Number(c.id_obra)));
+          const preventivoObras = new Set(preventivos.map(p => Number(p.id_obra)));
+          const correctivoIds = [];
+          const preventivoIds = [];
+
+          selection.data?.forEach(sel => {
+            const obraId = Number(sel.id_obra);
+
+            if (correctivoObras.has(obraId)) {
+              correctivoIds.push(Number(sel.id_sucursal));
+            }
+
+            if (preventivoObras.has(obraId)) {
+              preventivoIds.push(Number(sel.id_sucursal));
+            }
+          });
+
           const selectedSucursalIds = new Set([...correctivoIds, ...preventivoIds]);
           let filteredSucursales = sucursalesLocations.filter(s => selectedSucursalIds.has(Number(s.id)))
           filteredSucursales = [...filteredSucursales].sort((a, b) => {
@@ -130,7 +142,7 @@ export function useMapsData() {
             .map(c => ({
               id: c.id,
               id_sucursal: c.id_sucursal,
-              cliente_id: c.cliente_id,
+              id_cliente: c.id_cliente,
               nombre_sucursal: filteredSucursales.find(s => Number(s.id) === Number(c.id_sucursal))?.name || 'Unknown',
               fecha_apertura: c.fecha_apertura || 'Sin fecha',
               numero_caso: c.numero_caso || 'Sin número',
@@ -141,7 +153,7 @@ export function useMapsData() {
             .map(p => ({
               id: p.id,
               id_sucursal: p.id_sucursal,
-              cliente_id: p.cliente_id,
+              id_cliente: p.id_cliente,
               nombre_sucursal: filteredSucursales.find(s => Number(s.id) === Number(p.id_sucursal))?.name || 'Unknown',
               fecha_apertura: p.fecha_apertura || 'Sin fecha',
               frecuencia: p.frecuencia || 'Sin frecuencia'

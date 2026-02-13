@@ -1,7 +1,7 @@
 import { useState, useContext, useRef } from "react";
 import { useAuthRoles } from '../useAuthRoles';
 import { LocationContext } from "../../context/LocationContext";
-import { getSucursalesLocations, getCorrectivos, getPreventivos } from "../../services/maps";
+import { getSucursalesLocations, getSelection } from "../../services/maps";
 import { getMantenimientosCorrectivos } from '../../services/mantenimientoCorrectivoService';
 import { getMantenimientosPreventivos } from '../../services/mantenimientoPreventivoService';
 import { notify_nearby_maintenances } from "../../services/notificaciones";
@@ -18,20 +18,13 @@ export const useRutaData = (isNavigating) => {
   const fetchData = async () => {
     if (!id || !userLocation) return;
     try {
-      const [sucursalesRes, correctivosRes, preventivosRes] = await Promise.all([
+      const [sucursalesRes, selectionRes] = await Promise.all([
         getSucursalesLocations(),
-        getCorrectivos(parseInt(id)),
-        getPreventivos(parseInt(id)),
+        getSelection(parseInt(id)),
       ]);
 
       const allSucursales = sucursalesRes.data;
-      const correctivoIds = correctivosRes.data || [];
-      const preventivoIds = preventivosRes.data || [];
-
-      const selectedIds = new Set([
-        ...correctivoIds.map((c) => Number(c.id_sucursal)),
-        ...preventivoIds.map((p) => Number(p.id_sucursal)),
-      ]);
+      const selectedIds = selectionRes.data?.map((s) => Number(s.id_sucursal)) || [];
 
       let filtered = allSucursales.filter((s) =>
         selectedIds.has(Number(s.id))
@@ -63,20 +56,15 @@ export const useRutaData = (isNavigating) => {
         sucursalesRes,
         allCorrectivosRes,
         allPreventivosRes,
-        selectedCorrectivosRes,
-        selectedPreventivosRes,
+        selectedObrasRes,
       ] = await Promise.all([
         getSucursalesLocations(),
         getMantenimientosCorrectivos(),
         getMantenimientosPreventivos(),
-        getCorrectivos(parseInt(id)),
-        getPreventivos(parseInt(id)),
+        getSelection(parseInt(id)),
       ]);
 
-      const selectedIds = new Set([
-        ...selectedCorrectivosRes.data.map((c) => c.id_mantenimiento),
-        ...selectedPreventivosRes.data.map((p) => p.id_mantenimiento),
-      ]);
+      const selectedIds = selectedObrasRes.data?.map((s) => s.id_obra) || [];
 
       const nearbySucursalIds = new Set(
         sucursalesRes.data
@@ -100,7 +88,7 @@ export const useRutaData = (isNavigating) => {
         (m) =>
           m.id_cuadrilla === parseInt(id) &&
           nearbySucursalIds.has(m.id_sucursal) &&
-          !selectedIds.has(m.id)
+          !selectedIds.has(m.id_obra)
       );
 
       const payload = [];

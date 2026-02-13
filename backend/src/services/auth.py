@@ -120,13 +120,13 @@ def create_firebase_user(user_data: UserCreate, db: Session, current_entity: dic
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
 
-def update_firebase_user(user_id: int, user_data: UserUpdate, db: Session, current_entity: dict):
+def update_firebase_user(id_user: int, user_data: UserUpdate, db: Session, current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity["type"] != "usuario" or current_entity["data"]["rol"] != Role.ADMIN:
         raise HTTPException(status_code=403, detail="No tienes permisos de administrador")
 
-    db_user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    db_user = db.query(Usuario).filter(Usuario.id == id_user).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -142,13 +142,13 @@ def update_firebase_user(user_id: int, user_data: UserUpdate, db: Session, curre
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al actualizar usuario: {str(e)}")
 
-def delete_firebase_user(user_id: int, db: Session, current_entity: dict):
+def delete_firebase_user(id_user: int, db: Session, current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity["type"] != "usuario" or current_entity["data"]["rol"] != Role.ADMIN:
         raise HTTPException(status_code=403, detail="No tienes permisos de administrador")
 
-    db_user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    db_user = db.query(Usuario).filter(Usuario.id == id_user).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -207,13 +207,13 @@ def create_firebase_cuadrilla(cuadrilla_data: CuadrillaCreate, db: Session, curr
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al crear cuadrilla: {str(e)}")
 
-def update_firebase_cuadrilla(cuadrilla_id: int, cuadrilla_data: CuadrillaUpdate, db: Session, current_entity: dict):
+def update_firebase_cuadrilla(id_cuadrilla: int, cuadrilla_data: CuadrillaUpdate, db: Session, current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity["type"] != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
-    db_cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
+    db_cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == id_cuadrilla).first()
     if not db_cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
 
@@ -229,13 +229,13 @@ def update_firebase_cuadrilla(cuadrilla_id: int, cuadrilla_data: CuadrillaUpdate
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al actualizar cuadrilla: {str(e)}")
 
-def delete_firebase_cuadrilla(cuadrilla_id: int, db: Session, current_entity: dict):
+def delete_firebase_cuadrilla(id_cuadrilla: int, db: Session, current_entity: dict):
     if not current_entity:
         raise HTTPException(status_code=401, detail="Autenticación requerida")
     if current_entity["type"] != "usuario":
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
-    db_cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == cuadrilla_id).first()
+    db_cuadrilla = db.query(Cuadrilla).filter(Cuadrilla.id == id_cuadrilla).first()
     if not db_cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
 

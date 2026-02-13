@@ -165,7 +165,7 @@ const Estadisticas = () => {
 
   const getSucursalOptions = (clienteId, zonaName) => {
     return sucursales.filter((sucursal) => {
-      if (clienteId && String(sucursal.cliente_id) !== clienteId) return false;
+      if (clienteId && String(sucursal.id_cliente) !== clienteId) return false;
       if (zonaName && sucursal.zona !== zonaName) return false;
       return true;
     });
