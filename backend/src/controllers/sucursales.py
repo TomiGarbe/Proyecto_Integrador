@@ -9,11 +9,11 @@ from services.sucursales import (
     create_sucursal,
     delete_sucursal,
     get_sucursales,
-    get_sucursal,
+    get_sucursalesByCliente,
     update_sucursal,
 )
 
-router = APIRouter(tags=["sucursales"])
+router = APIRouter(prefix="/sucursales", tags=["sucursales"])
 
 def _serialize_sucursal(s) -> dict:
     return {
@@ -32,20 +32,18 @@ def sucursales_get(request: Request, db: Session = Depends(get_db)):
     sucursales = get_sucursales(db, current_entity)
     return [_serialize_sucursal(s) for s in sucursales]
 
-@router.get("/{id_sucursal}", response_model=dict)
-def sucursal_get(id_sucursal: int, request: Request, db: Session = Depends(get_db)):
+@router.get("/{id_cliente}", response_model=List[dict])
+def sucursalesByCliente_get(id_cliente: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    sucursal = get_sucursal(db, id_sucursal, current_entity)
-    return _serialize_sucursal(sucursal)
+    sucursales = get_sucursalesByCliente(db, id_cliente, current_entity)
+    return [_serialize_sucursal(s) for s in sucursales]
 
 @router.post("/", response_model=dict)
-def sucursal_create(id_cliente: int, sucursal: SucursalCreate, request: Request, db: Session = Depends(get_db)):
-    if sucursal.id_cliente != id_cliente:
-        raise HTTPException(status_code=400, detail="El cliente del cuerpo no coincide con el de la ruta")
+def sucursal_create(sucursal: SucursalCreate, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
     new_sucursal = create_sucursal(
         db,
-        id_cliente,
+        sucursal.id_cliente,
         sucursal.nombre,
         sucursal.zona,
         sucursal.direccion,

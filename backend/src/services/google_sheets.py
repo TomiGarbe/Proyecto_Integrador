@@ -174,7 +174,7 @@ def _resolve_related_name(mantenimiento, attr: str) -> str:
 def _build_correctivo_row(mantenimiento: MantenimientoCorrectivo, include_links: bool = False):
     foto_url = ""
     if include_links:
-        foto_url = get_fotos_gallery_url(mantenimiento.id, "correctivos") or ""
+        foto_url = get_fotos_gallery_url(mantenimiento.id_obra) or ""
     return [
         _resolve_related_name(mantenimiento, "cliente"),
         _resolve_related_name(mantenimiento, "sucursal"),
@@ -197,7 +197,7 @@ def _build_preventivo_row(mantenimiento: MantenimientoPreventivo, include_links:
     fotos_url = ""
     if include_links:
         planillas_url = get_planillas_gallery_url(mantenimiento.id) or ""
-        fotos_url = get_fotos_gallery_url(mantenimiento.id, "preventivos") or ""
+        fotos_url = get_fotos_gallery_url(mantenimiento.id_obra) or ""
     return [
         _resolve_related_name(mantenimiento, "cliente"),
         _resolve_related_name(mantenimiento, "sucursal"),

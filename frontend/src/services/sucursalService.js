@@ -20,19 +20,24 @@ export const getSucursales = async () => {
 
   return {
     data: sucursales.map(s =>
-      normalizeSucursal(s, clienteMap.get(s.cliente_id))
+      normalizeSucursal(s, clienteMap.get(s.id_cliente))
     )
   };
 };
 
 export const getSucursalesByCliente = async (clienteId) => {
-  const response = await api.get(`/sucursales/${clienteId}`);
+  const [clientesResp, sucursalesResp] = await Promise.all([
+    getClientes(),
+    api.get(`/sucursales/${clienteId}`)
+  ]);
+  const clientes = clientesResp.data || [];
+  const sucursales = sucursalesResp.data || [];
+  const clienteMap = new Map(clientes.map(c => [c.id, c.nombre]));
 
   return {
-    ...response,
-    data: (response.data || []).map((sucursal) =>
-      normalizeSucursal(sucursal)
-    ),
+    data: sucursales.map(s =>
+      normalizeSucursal(s, clienteMap.get(s.id_cliente))
+    )
   };
 };
 
@@ -41,7 +46,7 @@ export const getSucursal = (id) => api.get(`/sucursales/${id}`);
 export const createSucursal = (clienteId, sucursal) =>
   api.post(`/sucursales/`, {
     ...sucursal,
-    cliente_id: clienteId,
+    id_cliente: clienteId,
     frecuencia_preventivo: sucursal.frecuencia_preventivo || null,
   });
 

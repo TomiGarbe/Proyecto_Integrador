@@ -25,7 +25,6 @@ def mantenimientos_correctivos_get(request: Request, db: Session = Depends(get_d
             "incidente": m.incidente,
             "rubro": m.rubro,
             "planilla": m.planilla,
-            "fotos": [foto.url for foto in m.fotos],
             "estado": m.estado,
             "prioridad": m.prioridad,
             "extendido": m.extendido
@@ -36,7 +35,7 @@ def mantenimientos_correctivos_get(request: Request, db: Session = Depends(get_d
 @router.get("/{id_mantenimiento}", response_model=dict)
 def mantenimiento_correctivo_get(id_mantenimiento: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    mantenimiento = get_mantenimiento_correctivo(db, id_mantenimiento, current_entity)
+    mantenimiento, fotos = get_mantenimiento_correctivo(db, id_mantenimiento, current_entity)
     return {
         "id": mantenimiento.id,
         "id_obra": mantenimiento.id_obra,
@@ -49,7 +48,7 @@ def mantenimiento_correctivo_get(id_mantenimiento: int, request: Request, db: Se
         "incidente": mantenimiento.incidente,
         "rubro": mantenimiento.rubro,
         "planilla": mantenimiento.planilla,
-        "fotos": [foto.url for foto in mantenimiento.fotos],
+        "fotos": [foto.url for foto in fotos] if fotos else [],
         "estado": mantenimiento.estado,
         "prioridad": mantenimiento.prioridad,
         "extendido": mantenimiento.extendido
@@ -105,9 +104,9 @@ async def mantenimiento_correctivo_update(
     db: Session = Depends(get_db)
 ):
     current_entity = request.state.current_entity
-    updated_mantenimiento = await update_mantenimiento_correctivo(
+    updated_mantenimiento, fotos = await update_mantenimiento_correctivo(
         db,
-        mantenimiento_id,
+        id_mantenimiento,
         current_entity,
         id_cliente,
         id_sucursal,
@@ -135,13 +134,13 @@ async def mantenimiento_correctivo_update(
         "incidente": updated_mantenimiento.incidente,
         "rubro": updated_mantenimiento.rubro,
         "planilla": updated_mantenimiento.planilla,
-        "fotos": [foto.url for foto in updated_mantenimiento.fotos],
+        "fotos": [foto.url for foto in fotos] if fotos else [],
         "estado": updated_mantenimiento.estado,
         "prioridad": updated_mantenimiento.prioridad,
         "extendido": updated_mantenimiento.extendido
     }
 
-@router.delete("/{mantenimiento_id}", response_model=dict)
-def mantenimiento_correctivo_delete(mantenimiento_id: int, request: Request, db: Session = Depends(get_db)):
+@router.delete("/{id_mantenimiento}", response_model=dict)
+def mantenimiento_correctivo_delete(id_mantenimiento: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    return delete_mantenimiento_correctivo(db, mantenimiento_id, current_entity)
+    return delete_mantenimiento_correctivo(db, id_mantenimiento, current_entity)

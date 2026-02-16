@@ -44,16 +44,26 @@ def _get_cuadrilla(db: Session, id_cuadrilla: int) -> Cuadrilla:
         raise HTTPException(status_code=404, detail="Cuadrilla no encontrada")
     return cuadrilla
 
+def _get_fotos(db: Session, id_obra: int) -> List[FotoObra]:
+    fotos = db.query(FotoObra).filter(FotoObra.id_obra == id_obra).all()
+    return fotos
+
 def get_mantenimientos_correctivos(db: Session, current_entity: dict):
     _ensure_entity(current_entity)
-    return db.query(MantenimientoCorrectivo).all()
+    mantenimientos = db.query(MantenimientoCorrectivo).all()
+    return mantenimientos
 
 def get_mantenimiento_correctivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_entity(current_entity)
-    mantenimiento = db.query(MantenimientoCorrectivo).filter(MantenimientoCorrectivo.id == id_mantenimiento).first()
+    mantenimiento = (
+        db.query(MantenimientoCorrectivo)
+        .filter(MantenimientoCorrectivo.id == id_mantenimiento)
+        .first()
+    )
     if not mantenimiento:
         raise HTTPException(status_code=404, detail="Mantenimiento correctivo no encontrado")
-    return mantenimiento
+    fotos = _get_fotos(db, mantenimiento.id_obra)
+    return mantenimiento, fotos
 
 async def create_mantenimiento_correctivo(
     db: Session,
@@ -134,7 +144,10 @@ async def update_mantenimiento_correctivo(
 ):
     _ensure_entity(current_entity)
 
-    db_mantenimiento = get_mantenimiento_correctivo(db, id_mantenimiento)
+    db_mantenimiento = db.query(MantenimientoCorrectivo).filter(MantenimientoCorrectivo.id == id_mantenimiento).first()
+
+    if not db_mantenimiento:
+        raise HTTPException(status_code=404, detail="Mantenimiento correctivo no encontrado")
 
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
@@ -227,8 +240,10 @@ async def update_mantenimiento_correctivo(
             mensaje=f"Correctivo urgente asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
             firebase_uid=cuadrilla.firebase_uid,
         )
+    
+    fotos = _get_fotos(db, db_mantenimiento.id_obra)
 
-    return db_mantenimiento
+    return db_mantenimiento, fotos
 
 def delete_mantenimiento_correctivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_usuario(current_entity)

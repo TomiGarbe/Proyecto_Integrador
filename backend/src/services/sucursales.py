@@ -92,12 +92,12 @@ def get_sucursales(db_session: Session, current_entity: dict):
     _ensure_entity(current_entity)
     return db_session.query(Sucursal).all()
 
-def get_sucursal(db_session: Session, id_sucursal: int, current_entity: dict):
+def get_sucursalesByCliente(db_session: Session, id_cliente: int, current_entity: dict):
     _ensure_entity(current_entity)
-    sucursal = db_session.query(Sucursal).filter(Sucursal.id == id_sucursal).first()
-    if not sucursal:
-        raise HTTPException(status_code=404, detail="Sucursal no encontrada")
-    return sucursal
+    sucursales = db_session.query(Sucursal).filter(Sucursal.id_cliente == id_cliente).all()
+    if not sucursales:
+        raise HTTPException(status_code=404, detail="Sucursales no encontradas para el cliente")
+    return sucursales
 
 def create_sucursal(
     db_session: Session,
