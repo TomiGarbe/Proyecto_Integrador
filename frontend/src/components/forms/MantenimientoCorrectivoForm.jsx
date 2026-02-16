@@ -111,7 +111,8 @@ const MantenimientoCorrectivoForm = ({
       const payload = {
         ...formData,
         id_cliente: parseInt(clienteId, 10),
-        id_sucursal: formData.id_sucursal,
+        id_sucursal: parseInt(formData.id_sucursal, 10),
+        id_cuadrilla: parseInt(formData.id_cuadrilla, 10),
       };
 
       if (mantenimiento) {

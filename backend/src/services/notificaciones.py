@@ -3,19 +3,20 @@ from sqlalchemy.orm import Session
 from api.models import Notificacion, Usuario
 from .webpush import send_webpush_notification
 from .notification_ws import notification_manager
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone, timedelta
 from typing import Optional
     
 def notify_user(db_session: Session, firebase_uid: str, id_obra: int, mensaje: str, title: str, body: str):
+    now_utc = datetime.now(timezone.utc)
+    today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
     existing_notification = db_session.query(Notificacion).filter(
         Notificacion.firebase_uid == firebase_uid,
         Notificacion.id_obra == id_obra,
         Notificacion.mensaje == mensaje,
-        Notificacion.created_at >= datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).replace(hour=0, minute=0, second=0, microsecond=0),
-        Notificacion.created_at < datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).replace(hour=23, minute=59, second=59, microsecond=999999)
+        Notificacion.created_at >= today_start,
+        Notificacion.created_at <= today_end
     ).first()
-
     if not existing_notification:
         send_webpush_notification(db_session, firebase_uid, title, body)
         return {"message": "Notification sent"}
@@ -32,12 +33,15 @@ def notificacion_leida(db_session: Session, id_notificacion: int):
     return db_notificacion
 
 async def send_notification(db_session: Session, firebase_uid: str, id_obra: int, mensaje: str):
+    now_utc = datetime.now(timezone.utc)
+    today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
     existing_notification = db_session.query(Notificacion).filter(
         Notificacion.firebase_uid == firebase_uid,
         Notificacion.id_obra == id_obra,
         Notificacion.mensaje == mensaje,
-        Notificacion.created_at >= datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).replace(hour=0, minute=0, second=0, microsecond=0),
-        Notificacion.created_at < datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")).replace(hour=23, minute=59, second=59, microsecond=999999)
+        Notificacion.created_at >= today_start,
+        Notificacion.created_at <= today_end
     ).first()
     if not existing_notification:
         db_notificacion = Notificacion(firebase_uid=firebase_uid, id_obra=id_obra, mensaje=mensaje)

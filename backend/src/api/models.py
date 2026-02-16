@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Text, DateTime, func, Boolean, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
@@ -66,7 +65,7 @@ class Obra(Base):
 class MantenimientoPreventivo(Base):
     __tablename__ = "mantenimiento_preventivo"
     id = Column(Integer, primary_key=True)
-    obra_id = Column(Integer, ForeignKey("obra.id"), unique=True)
+    id_obra = Column(Integer, ForeignKey("obra.id"), unique=True)
     id_cliente = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     id_sucursal = Column(Integer, ForeignKey("sucursal.id"), nullable=False)
     frecuencia = Column(String)
@@ -85,7 +84,7 @@ class MantenimientoPreventivo(Base):
 class MantenimientoPreventivoPlanilla(Base):
     __tablename__ = "mantenimiento_preventivo_planilla"
     id = Column(Integer, primary_key=True)
-    mantenimiento_id = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
+    id_mantenimiento = Column(Integer, ForeignKey("mantenimiento_preventivo.id"))
     url = Column(String, nullable=False)
 
 class MantenimientoCorrectivo(Base):
@@ -146,7 +145,7 @@ class PushSubscription(Base):
     p256dh = Column(String, nullable=False)
     auth = Column(String, nullable=False)
     device_info = Column(String, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
 class Notificacion(Base):
     __tablename__ = "notificacion"
@@ -156,7 +155,7 @@ class Notificacion(Base):
     id_obra = Column(Integer, ForeignKey("obra.id"))
     mensaje = Column(String, nullable=False)
     leida = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     obra = relationship("Obra", back_populates="notificaciones")
 
@@ -168,7 +167,7 @@ class Mensaje(Base):
     id_obra = Column(Integer, ForeignKey("obra.id"))
     texto = Column(String, nullable=True)
     archivo = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     obra = relationship("Obra", back_populates="mensajes")
 
@@ -201,7 +200,7 @@ class MovimientoStock(Base):
     tipo_movimiento = Column(String(20), nullable=False)
     cantidad = Column(Numeric(10,2), nullable=False)
     id_obra = Column(Integer, ForeignKey("obra.id"), nullable=True)
-    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(ZoneInfo("America/Argentina/Buenos_Aires")))
+    fecha = Column(DateTime(timezone=True), server_default=func.now())
 
     obra = relationship("Obra", back_populates="movimientos_stock")
     material = relationship("Material", back_populates="movimientos")

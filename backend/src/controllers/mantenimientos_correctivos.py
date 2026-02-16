@@ -24,7 +24,6 @@ def mantenimientos_correctivos_get(request: Request, db: Session = Depends(get_d
             "numero_caso": m.numero_caso,
             "incidente": m.incidente,
             "rubro": m.rubro,
-            "planilla": m.planilla,
             "estado": m.estado,
             "prioridad": m.prioridad,
             "extendido": m.extendido

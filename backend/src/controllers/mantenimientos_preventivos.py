@@ -22,8 +22,6 @@ def mantenimientos_preventivos_get(request: Request, db: Session = Depends(get_d
             "id_cuadrilla": m.id_cuadrilla,
             "fecha_apertura": m.fecha_apertura,
             "fecha_cierre": m.fecha_cierre,
-            "planillas": [planilla.url for planilla in m.planillas],
-            "fotos": [foto.url for foto in m.fotos],
             "extendido": m.extendido,
             "estado": m.estado
         }
@@ -33,7 +31,7 @@ def mantenimientos_preventivos_get(request: Request, db: Session = Depends(get_d
 @router.get("/{id_mantenimiento}", response_model=dict)
 def mantenimiento_preventivo_get(id_mantenimiento: int, request: Request, db: Session = Depends(get_db)):
     current_entity = request.state.current_entity
-    mantenimiento = get_mantenimiento_preventivo(db, id_mantenimiento, current_entity)
+    mantenimiento, fotos = get_mantenimiento_preventivo(db, id_mantenimiento, current_entity)
     return {
         "id": mantenimiento.id,
         "id_obra": mantenimiento.id_obra,
@@ -44,7 +42,7 @@ def mantenimiento_preventivo_get(id_mantenimiento: int, request: Request, db: Se
         "fecha_apertura": mantenimiento.fecha_apertura,
         "fecha_cierre": mantenimiento.fecha_cierre,
         "planillas": [planilla.url for planilla in mantenimiento.planillas],
-        "fotos": [foto.url for foto in mantenimiento.fotos],
+        "fotos": [foto.url for foto in fotos] if fotos else [],
         "extendido": mantenimiento.extendido,
         "estado": mantenimiento.estado
     }
@@ -90,7 +88,7 @@ async def mantenimiento_preventivo_update(
     db: Session = Depends(get_db)
 ):
     current_entity = request.state.current_entity
-    updated_mantenimiento = await update_mantenimiento_preventivo(
+    updated_mantenimiento, fotos = await update_mantenimiento_preventivo(
         db,
         id_mantenimiento,
         current_entity,
@@ -115,7 +113,7 @@ async def mantenimiento_preventivo_update(
         "fecha_apertura": updated_mantenimiento.fecha_apertura,
         "fecha_cierre": updated_mantenimiento.fecha_cierre,
         "planillas": [planilla.url for planilla in updated_mantenimiento.planillas],
-        "fotos": [foto.url for foto in updated_mantenimiento.fotos],
+        "fotos": [foto.url for foto in fotos] if fotos else [],
         "extendido": updated_mantenimiento.extendido,
         "estado": updated_mantenimiento.estado
     }

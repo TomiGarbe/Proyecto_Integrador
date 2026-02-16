@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from api.models import Mensaje
+from api.models import Mensaje, Obra
 from fastapi import HTTPException, UploadFile
 from typing import Optional
 from services.gcloud_storage import upload_chat_file_to_gcloud
@@ -34,20 +34,23 @@ async def send_message(
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
         raise HTTPException(status_code=500, detail="Google Cloud Bucket name not configured")
+
+    obra = db_session.query(Obra).filter(Obra.id == id_obra).first()
+    if not obra:
+        raise HTTPException(status_code=404, detail="La obra no existe")
     
     try:
         base_folder = f"mensajes/{id_obra}"
         db_message = Mensaje(
             firebase_uid=firebase_uid,
             nombre_usuario=nombre_usuario,
-            id_obra=id_obra
+            id_obra=obra.id
         )
         if texto is not None:
             db_message.texto = texto
         if archivo is not None:
             archivo_url = await upload_chat_file_to_gcloud(archivo, bucket_name, f"{base_folder}/chat")
             db_message.archivo = archivo_url
-        
         db_session.add(db_message)
         db_session.commit()
         db_session.refresh(db_message)
@@ -66,4 +69,5 @@ async def send_message(
         return db_message
     except Exception as e:
         db_session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        traceback.print_exc()
+        raise

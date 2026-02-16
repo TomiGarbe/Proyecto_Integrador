@@ -103,16 +103,25 @@ def _ensure_preventivo_period(
             detail="Ya existe un mantenimiento preventivo para esta sucursal en el período correspondiente a su frecuencia",
         )
 
+def _get_fotos(db: Session, id_obra: int) -> List[FotoObra]:
+    fotos = db.query(FotoObra).filter(FotoObra.id_obra == id_obra).all()
+    return fotos
+
 def get_mantenimientos_preventivos(db: Session, current_entity: dict):
-    _ensure_usuario(current_entity)
+    _ensure_entity(current_entity)
     return db.query(MantenimientoPreventivo).all()
 
 def get_mantenimiento_preventivo(db: Session, id_mantenimiento: int, current_entity: dict):
-    _ensure_usuario(current_entity)
-    mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == id_mantenimiento).first()
+    _ensure_entity(current_entity)
+    mantenimiento = (
+        db.query(MantenimientoPreventivo)
+        .filter(MantenimientoPreventivo.id == id_mantenimiento)
+        .first()
+    )
     if not mantenimiento:
         raise HTTPException(status_code=404, detail="Mantenimiento preventivo no encontrado")
-    return mantenimiento
+    fotos = _get_fotos(db, mantenimiento.id_obra)
+    return mantenimiento, fotos
 
 async def create_mantenimiento_preventivo(
     db: Session,
@@ -160,9 +169,10 @@ async def create_mantenimiento_preventivo(
     db.commit()
     db.refresh(db_mantenimiento)
     append_preventivo(db_mantenimiento)
+
     await notify_users(
         db_session=db,
-        id_obra=db_mantenimiento.id_obra,
+        id_obra=obra.id,
         mensaje=f"Nuevo preventivo asignado - Sucursal: {sucursal.nombre}",
         firebase_uid=cuadrilla.firebase_uid,
     )
@@ -185,7 +195,10 @@ async def update_mantenimiento_preventivo(
 ):
     _ensure_entity(current_entity)
 
-    db_mantenimiento = get_mantenimiento_preventivo(db, id_mantenimiento)
+    db_mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == id_mantenimiento).first()
+
+    if not db_mantenimiento:
+        raise HTTPException(status_code=404, detail="Mantenimiento preventivo no encontrado")
 
     bucket_name = GOOGLE_CLOUD_BUCKET_NAME
     if not bucket_name:
@@ -268,12 +281,19 @@ async def update_mantenimiento_preventivo(
     db.commit()
     db.refresh(db_mantenimiento)
     update_preventivo(db_mantenimiento)
-    return db_mantenimiento
+
+    fotos = _get_fotos(db, db_mantenimiento.id_obra)
+
+    return db_mantenimiento, fotos
 
 def delete_mantenimiento_preventivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_usuario(current_entity)
 
-    db_mantenimiento = get_mantenimiento_preventivo(db, id_mantenimiento)
+    db_mantenimiento = db.query(MantenimientoPreventivo).filter(MantenimientoPreventivo.id == id_mantenimiento).first()
+
+    if not db_mantenimiento:
+        raise HTTPException(status_code=404, detail="Mantenimiento preventivo no encontrado")
+
     db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.id_obra).first()
     db.delete(db_mantenimiento)
     db.delete(db_obra)

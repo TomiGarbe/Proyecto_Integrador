@@ -50,8 +50,7 @@ def _get_fotos(db: Session, id_obra: int) -> List[FotoObra]:
 
 def get_mantenimientos_correctivos(db: Session, current_entity: dict):
     _ensure_entity(current_entity)
-    mantenimientos = db.query(MantenimientoCorrectivo).all()
-    return mantenimientos
+    return db.query(MantenimientoCorrectivo).all()
 
 def get_mantenimiento_correctivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_entity(current_entity)
@@ -106,19 +105,20 @@ async def create_mantenimiento_correctivo(
     db.commit()
     db.refresh(db_mantenimiento)
     append_correctivo(db_mantenimiento)
+    
     if cuadrilla is not None:
         if prioridad == "Alta":
             notify_user(
                 db_session=db,
                 firebase_uid=cuadrilla.firebase_uid,
-                id_obra=db_mantenimiento.id_obra,
+                id_obra=obra.id,
                 mensaje=f"Nuevo correctivo asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
                 title="Nuevo correctivo urgente asignado",
                 body=f"Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente}",
             )
         await notify_users(
             db_session=db,
-            id_obra=db_mantenimiento.id_obra,
+            id_obra=obra.id,
             mensaje=f"Nuevo correctivo asignado - Sucursal: {sucursal.nombre} | Incidente: {db_mantenimiento.incidente} | Prioridad: {db_mantenimiento.prioridad}",
             firebase_uid=cuadrilla.firebase_uid,
         )
@@ -247,7 +247,12 @@ async def update_mantenimiento_correctivo(
 
 def delete_mantenimiento_correctivo(db: Session, id_mantenimiento: int, current_entity: dict):
     _ensure_usuario(current_entity)
-    db_mantenimiento = get_mantenimiento_correctivo(db, id_mantenimiento)
+    
+    db_mantenimiento = db.query(MantenimientoCorrectivo).filter(MantenimientoCorrectivo.id == id_mantenimiento).first()
+
+    if not db_mantenimiento:
+        raise HTTPException(status_code=404, detail="Mantenimiento correctivo no encontrado")
+
     db_obra = db.query(Obra).filter(Obra.id == db_mantenimiento.id_obra).first()
     db.delete(db_mantenimiento)
     db.delete(db_obra)
